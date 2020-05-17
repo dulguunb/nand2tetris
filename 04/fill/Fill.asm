@@ -15,54 +15,40 @@
 
 @SCREEN
 D=A
-@dstart
-M=D
+@addr
+M=D  // addr = 16384// (screen’s base address)
 
-@256
-D=A
-@n // row
+@1
+D=M
+@addr
 M=M+D
-@512
-D=A
-@m // column
-M=M+D
-@j // column pointer
-M=0
 
-(OUTER_LOOP)
-  @j 
+
+@0
+D=M
+@n
+M=D  // n = RAM[0]
+@i
+M=0  // i = 0
+(LOOP)
+  @i
   D=M
-  @m
+  @n
   D=D-M
   @END
-  D;JGT
-  @i // row pointer
-  M=0
-  @j
-  M=M+1
+  D;JGT  // if i>n goto END
   @addr
-  M=M+1
-  (INNER_LOOP)
-    @i
-    D=M
-    @n
-    D=D-M
-    @END
-    D;JGT
-    
-    @addr
-    A=M
-    M=-1
-
-    @i
-    M=M+1
-    @32
-    D=A
-    @addr
-    M=M+D
-    @OUTER_LOOP
-    0;JMP
+  A=M
+  M=-1   // RAM[addr]=1111111111111111
+  @i
+  M=M+1  // i = i + 1
+  @32
+  D=A   
+  @addr
+  M=D+M  // addr = addr + 32
+  @LOOP
+  0;JMP  // goto LOOP
 
 (END)
   @END
-  0;JMP
+  0;JMP  // infinite loop
