@@ -13,42 +13,39 @@
 //256(row)x512 (n * m)
 // Put your code here.
 
-@SCREEN
-D=A
-@addr
-M=D  // addr = 16384// (screen’s base address)
 
-@1
-D=M
-@addr
-M=M+D
-
-
-@0
-D=M
-@n
-M=D  // n = RAM[0]
-@i
-M=0  // i = 0
-(LOOP)
-  @i
+(OUTERLOOP)
+  @KBD
   D=M
-  @n
-  D=D-M
-  @END
-  D;JGT  // if i>n goto END
-  @addr
-  A=M
-  M=-1   // RAM[addr]=1111111111111111
-  @i
-  M=M+1  // i = i + 1
-  @32
-  D=A   
-  @addr
-  M=D+M  // addr = addr + 32
-  @LOOP
-  0;JMP  // goto LOOP
 
-(END)
-  @END
-  0;JMP  // infinite loop
+  
+  @PRESSED
+  D;JEQ
+  M=-1
+
+  @NOTPRESSED
+  0;JMP
+
+
+  (PRESSED)
+  @R0
+  M=-1
+  @DRAW
+  0;JMP
+
+  (NOTPRESSED)
+  @R0
+  M=0
+  @DRAW
+  0;JMP
+
+  (DRAW)
+    @8191
+    D=A
+    @R1
+    M=D
+    (INNER_LOOP)
+    
+
+@OUTERLOOP
+0;JMP
