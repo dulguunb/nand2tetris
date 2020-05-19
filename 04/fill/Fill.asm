@@ -18,34 +18,59 @@
   @KBD
   D=M
 
-  
   @PRESSED
-  D;JEQ
-  M=-1
+  D;JGT
 
   @NOTPRESSED
   0;JMP
 
 
-  (PRESSED)
-  @R0
-  M=-1
-  @DRAW
-  0;JMP
+(PRESSED)
+@R0
+M=-1
+@DRAW
+0;JMP
 
-  (NOTPRESSED)
-  @R0
-  M=0
-  @DRAW
-  0;JMP
+(NOTPRESSED)
+@R0
+M=0
+@DRAW
+0;JMP
 
   (DRAW)
     @8191
     D=A
     @R1
     M=D
-    (INNER_LOOP)
-    
+    @i
+    M=0
+
+    (INNERLOOP)
+      @R1
+      D=M
+      @pos
+      M=D
+      @SCREEN
+      D=A
+      @pos
+      M=M+D
+
+      
+      @R0
+      D=M // selected color
+      @pos
+      A=M
+      M=D
+
+      @R1
+      D=M-1
+      M=D
+
+      @INNERLOOP
+      D;JGE
+
+      
+      
 
 @OUTERLOOP
 0;JMP
