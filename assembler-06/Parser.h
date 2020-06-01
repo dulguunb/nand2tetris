@@ -1,19 +1,24 @@
 #include <iostream>
 #include <vector>
 using namespace std;
-enum Token{
- at=1,
- d=2,
- a=3,
- m=3,
- jgt=4,
+enum Command {
+  A,
+  C,
+  L
 };
 
 class Parser{
   public:
     string rawProgram;
+    string::iterator currentLetter;
     vector<vector<Token>> tokens;
     Parser(string rawProgram);
   private:
-   void scan();
+   void advance();
+   bool hasMoreCommands();
+   Command commandType();
+   string symbol();
+   string dest();
+   string comp(); // returns comp mnemoics in current C_COMMAND
+   string jump(); // returns jump mnemoics in current C_COMMAND
 };

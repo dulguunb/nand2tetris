@@ -2,8 +2,8 @@
 using namespace std;
 class Code{
   public:
-    string AInstruction(){
-     
-    }
+    bitset<3> dest(string);
+    bitset<7> comp(string);
+    bitset<3> jump(string);
 
 };
