@@ -10,14 +10,29 @@ Command Parser::commandType(){
     if(*currentLetter == '@'){
       return Command::A;
     }
-    auto letter = currentLetter;
-    if(isdigit(*letter) || *letter == '!' || *letter = '-' || isupper(*letter))
+    if(isdigit(*currentLetter) || *currentLetter == '!' || *currentLetter == '-' || *currentLetter == 'D' || *currentLetter == 'A' || *currentLetter == 'M')
     {
       return Command::C;
     }
     if(*currentLetter == '('){
       return Command::L;
     }
+    if(*currentLetter == '/' && *(currentLetter++) == '/'){
+      return Command::Comment;
+    }
+    if(isspace(*currentLetter)){
+      return Command::Space;
+    }
+}
+void Parser::skipComment(){
+  if(commandType() == Command::Comment){
+    cout << "Command::Comment" << endl;
+    while(*currentLetter != '\n'){
+      currentLetter++;
+      cout << *currentLetter;
+    }
+    cout << endl;
+  }
 }
 string Parser::symbol(){
   auto currentCommandType = commandType();
@@ -25,8 +40,9 @@ string Parser::symbol(){
       string result = "";
       // result+=*currentLetter;
       advance();
-      while(isdigit(*currentLetter) || *currentLetter != '\n'){ // constant
+      while(isdigit(*currentLetter) && *currentLetter != '\n'){ // constant
         result+=*currentLetter;
+        cout << "symbol::Parser: " << result << endl;
         advance();
       }
     return result;
@@ -47,6 +63,7 @@ string Parser::dest(){
     string result = "";
     while(*currentLetter != '='){
       result+=*currentLetter;
+      cout << result << endl;
       advance();
     }
     advance();
@@ -57,8 +74,9 @@ string Parser::dest(){
 string Parser::comp(){
   if(commandType() == Command::C){
     string result;
-    while(*currentLetter != ';' || *currentLetter != '\n'){
+    while(*currentLetter != ';' && *currentLetter != '\n' && *currentLetter != EOF){
       result+=*currentLetter;
+      cout << "result::comp: " << result << endl;
       advance();
     }
     advance();
@@ -68,52 +86,19 @@ string Parser::comp(){
 }
 string Parser::jump(){
   if (commandType() == Command::C){
-
+    string result;
+    while(*currentLetter != '\n' && *currentLetter != EOF){
+      cout << "result::jump: " << result << endl;
+      result+=*currentLetter;
+      advance();
+    }
+    advance();
+    return result;
   }
+  return "";
 }
 void Parser::advance(){
   if (hasMoreCommands()){
     currentLetter++;
   }
-  // auto letter = rawProgram.begin();
-  // bool isEnd = false;
-  // while(!isEnd){
-  //   isEnd = (letter == rawProgram.end());
-  //   // if(isalnum(*letter) || *letter == '_' || *letter == '.' || *letter == '$' || *letter == ':'){ //
-  //   //   string constantAndSymbols = "";
-  //   //   constantAndSymbols+=*letter;
-  //   //   letter++;
-  //   //   while(isalnum(*letter)){
-  //   //     constantAndSymbols+=*letter;
-  //   //     letter++;
-  //   //   }
-  //   //   cout << "constantAndSymbols: " << constantAndSymbols << endl;
-  //   // }
-  //   if(isupper(*letter)){ //mnemonics
-  //     string mnemonics = "";
-  //     mnemonics+=*letter;
-  //     letter++;
-  //     while(isupper(*letter))
-  //     {
-
-  //     }
-  //   }
-  
-  //     while(isalnum(*letter)){ //variable?
-
-  //     }
-  //     cout << "constant: " << constant << endl;
-  //   }
-  //   auto next = (letter++);
-  //   if(*letter == '/' && *next == '/'){
-  //     string comment = "";
-  //     while(*letter != '\n'){
-  //       comment+=*letter;
-  //       letter++;
-  //     }
-  //     cout << "comment: " << comment << endl;
-  //   }
-  //   while (isspace(*letter))
-  //     letter++;
-  // }
 }

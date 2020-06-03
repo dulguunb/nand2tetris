@@ -4,17 +4,21 @@ using namespace std;
 enum Command {
   A,
   C,
-  L
+  L,
+  Comment,
+  Space
 };
 
 class Parser{
   public:
+    bool isEnd = false;
     string rawProgram;
     string::iterator currentLetter;
-    vector<vector<Token>> tokens;
+    vector<vector<Command>> tokens;
     Parser(string rawProgram);
-  private:
+  // private:
    void advance();
+   void skipComment();
    bool hasMoreCommands();
    Command commandType();
    string symbol();
