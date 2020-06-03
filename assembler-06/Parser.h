@@ -12,10 +12,10 @@ enum Command {
 class Parser{
   public:
     bool isEnd = false;
-    string rawProgram;
+    string rawProgram="";
     string::iterator currentLetter;
     vector<vector<Command>> tokens;
-    Parser(string rawProgram);
+    Parser(const string &rawProgram);
   // private:
    void advance();
    void skipComment();

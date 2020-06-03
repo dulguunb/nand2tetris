@@ -1,7 +1,8 @@
 #include "Parser.h"
 using namespace std;
-Parser::Parser(string rawProgram):rawProgram(rawProgram){
-  currentLetter = rawProgram.begin();
+Parser::Parser(const string &rawProgram){
+  this->rawProgram = rawProgram;
+  currentLetter = this->rawProgram.begin();
 }
 bool Parser::hasMoreCommands(){
   return currentLetter != rawProgram.end();
@@ -99,6 +100,7 @@ string Parser::jump(){
 }
 void Parser::advance(){
   if (hasMoreCommands()){
+    cout << "currentLetter: " << *currentLetter << endl;
     currentLetter++;
   }
 }
