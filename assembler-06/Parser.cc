@@ -27,12 +27,12 @@ Command Parser::commandType(){
 }
 void Parser::skipComment(){
   if(commandType() == Command::Comment){
-    cout << "Command::Comment" << endl;
+    string result = "";
     while(*currentLetter != '\n'){
+      result+=*currentLetter;
       currentLetter++;
-      cout << *currentLetter;
     }
-    cout << endl;
+    cout << "comment: " << result << endl;
   }
 }
 string Parser::symbol(){
@@ -43,7 +43,6 @@ string Parser::symbol(){
       advance();
       while(isdigit(*currentLetter) && *currentLetter != '\n'){ // constant
         result+=*currentLetter;
-        cout << "symbol::Parser: " << result << endl;
         advance();
       }
     return result;
@@ -64,7 +63,6 @@ string Parser::dest(){
     string result = "";
     while(*currentLetter != '='){
       result+=*currentLetter;
-      cout << result << endl;
       advance();
     }
     advance();
@@ -77,7 +75,6 @@ string Parser::comp(){
     string result;
     while(*currentLetter != ';' && *currentLetter != '\n' && *currentLetter != EOF){
       result+=*currentLetter;
-      cout << "result::comp: " << result << endl;
       advance();
     }
     advance();
@@ -89,7 +86,6 @@ string Parser::jump(){
   if (commandType() == Command::C){
     string result;
     while(*currentLetter != '\n' && *currentLetter != EOF){
-      cout << "result::jump: " << result << endl;
       result+=*currentLetter;
       advance();
     }
@@ -100,7 +96,6 @@ string Parser::jump(){
 }
 void Parser::advance(){
   if (hasMoreCommands()){
-    cout << "currentLetter: " << *currentLetter << endl;
     currentLetter++;
   }
 }

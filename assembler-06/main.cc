@@ -22,23 +22,31 @@ int main(int argc, char *argv[]){
       Parser parser(rawProgram);
       while(parser.hasMoreCommands()){
         if(parser.commandType() == Command::Comment){
-          parser.advance();
+          parser.skipComment();
         }
         else if(parser.commandType() == Command::C){
           auto dest = parser.dest();
           auto comp = parser.comp();
           auto jump = parser.jump();
-          cout << "C command " << endl;
-          cout << dest << '=' << comp << ';' << jump << endl;
+          cout << " ===== C command ===== " << endl;
+          cout << "dest: " << dest << endl; 
+          cout << "comp : " << comp << endl;
+          cout << "jump: " << jump << endl;
+          cout << " ================== " << endl;
         }
-        else if(parser.commandType() == Command::L || parser.commandType() == Command::A){
-          cout << "A&L command " << endl;
-          cout << parser.symbol() << endl;
+        else if(parser.commandType() == Command::L){
+          cout << "=========L command=========" << endl;
+          cout << "symbol: " << parser.symbol() << endl;
+          cout << "=======================" << endl;
+        }
+        else if ( parser.commandType() == Command::A ){
+          cout << "=======A command=======" << endl;
+          cout << "symbol: " << parser.symbol() << endl;
+          cout << "=======================" << endl;
         }
         else if(parser.commandType() == Command::Space){
           parser.advance();
         }
-        cout << parser.hasMoreCommands() << endl;
       }
       // while(true){
       //   cout << "while loop!" << endl;
