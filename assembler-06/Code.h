@@ -1,9 +1,15 @@
 #include <iostream>
+#include <bitset>
+#include <map>
 using namespace std;
 class Code{
   public:
-    bitset<3> dest(string);
-    bitset<7> comp(string);
-    bitset<3> jump(string);
-
+    Code();
+    int dest(string);
+    int comp(string);
+    int jump(string);
+  private:
+    map<string,int> codeTableComp;
+    map<string,int> codeTableJump;
+    map<string,int> codeTableDest;
 };
