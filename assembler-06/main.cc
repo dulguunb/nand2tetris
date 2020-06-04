@@ -3,7 +3,7 @@
 #include <string>
 #include "Parser.h"
 #include <bitset>
-//#include "SymbolTable.h"
+#include "SymbolTable.h"
 #include "Code.h"
 using namespace std;
 
@@ -22,16 +22,89 @@ int main(int argc, char *argv[]){
       cout << "RAW Assembly: " << endl;
       cout << rawProgram;
       cout << "====== Scanner/Parser ======" << endl;
-      Parser parser(rawProgram);
+      Parser *parser = new Parser(rawProgram);
       Code code;
-      while(parser.hasMoreCommands()){
-        if(parser.commandType() == Command::Comment){
-          parser.skipComment();
+      SymbolTable symbolTable;
+      int romAddress = 0;
+      // First Pass
+      cout << "================First Pass===============" << endl;
+      while(parser->hasMoreCommands()){
+        if(parser->commandType() == Command::Comment){
+          parser->skipComment();
         }
-        else if(parser.commandType() == Command::C){
-          auto dest = parser.dest();
-          auto comp = parser.comp();
-          auto jump = parser.jump();
+        else if(parser->commandType() == Command::C){
+          romAddress++;
+          auto dest = parser->dest();
+          auto comp = parser->comp();
+          auto jump = parser->jump();
+          cout << " ===== C command ===== " << endl;
+          cout << "dest: " << dest << endl;
+          cout << "comp : " << comp << endl;
+          cout << "jump: " << jump << endl;
+          auto compBin = code.comp(comp);
+          auto destBin = code.dest(dest);
+          auto jumpBin = code.jump(dest);
+          string a = bitset<1>(compBin.second).to_string<char,std::string::traits_type,
+            std::string::allocator_type>();
+          string c = bitset<6>(compBin.first).to_string<char,std::string::traits_type,
+            std::string::allocator_type>();
+          string d = bitset<3>(destBin).to_string<char,std::string::traits_type,
+            std::string::allocator_type>();
+          string j = bitset<3>(jumpBin).to_string<char,std::string::traits_type,
+            std::string::allocator_type>();
+          cout << "dest: " << d << endl;
+          cout << "comp<c,a>: " << c << "," << a << endl;
+          cout << "jump: " << j << endl;
+          cout << " ================== " << endl;
+          // concatinating opcode
+          string result = "111"+a+c+d+j;
+          cout << "result: " << result << endl;
+        }
+        else if(parser->commandType() == Command::L){
+          cout << "=========L command=========" << endl;
+          auto symbol = parser->symbol();
+          cout << "symbol: " << symbol << endl;
+          symbolTable.addEntry(symbol,romAddress);
+          cout << "=======================" << endl;
+        }
+        else if ( parser->commandType() == Command::A ){
+          cout << "=======A command=======" << endl;
+          auto symbol = parser->symbol();
+          bool isDigit = true;
+          int aInt;
+          for(auto iter=symbol.begin();iter!=symbol.end();iter++){
+            if(!isdigit(*iter)){
+              isDigit=false;
+            }
+          }
+          if(isDigit){
+            int aInt = stoi(symbol);
+            // concatinating the opcode
+            auto symbolBin = "0"+bitset<15>(aInt).to_string();
+            cout << "symbol: " << symbol << endl;
+            cout << "symbolBin: " << symbolBin << endl;
+            cout << "=======================" << endl;
+          }
+          else {
+            cout << "Variable is occured: " << symbol << endl;
+            symbolTable.addEntry(symbol,romAddress);
+          }
+        }
+        cout << "PARSER END: " << parser->hasMoreCommands() << endl;
+      }
+      cout << "===================Second Pass ========================" << endl;
+      // Second Pass
+      int newVariableAddress = 16;
+      parser = new Parser(rawProgram);
+      cout << "PARSER END: " << parser->hasMoreCommands() << endl;
+      while(parser->hasMoreCommands()){
+        if(parser->commandType() == Command::Comment){
+          parser->skipComment();
+        }
+        else if(parser->commandType() == Command::C){
+          auto dest = parser->dest();
+          auto comp = parser->comp();
+          auto jump = parser->jump();
           cout << " ===== C command ===== " << endl;
           cout << "dest: " << dest << endl;
           cout << "comp : " << comp << endl;
@@ -56,53 +129,62 @@ int main(int argc, char *argv[]){
           cout << "result: " << result << endl;
           machineCode << result;
         }
-        else if(parser.commandType() == Command::L){
+        else if(parser->commandType() == Command::L){
           cout << "=========L command=========" << endl;
-          cout << "symbol: " << parser.symbol() << endl;
-          cout << "=======================" << endl;
-        }
-        else if ( parser.commandType() == Command::A ){
-          cout << "=======A command=======" << endl;
-          auto symbol = parser.symbol();
-          int aInt = stoi(symbol);
-          // concatinating the opcode
-          auto symbolBin = "0"+bitset<15>(aInt).to_string();
+          auto symbol = parser->symbol();
           cout << "symbol: " << symbol << endl;
-          cout << "symbolBin: " << symbolBin << endl;
-          machineCode << symbolBin ;
+          symbolTable.addEntry(symbol,romAddress);
           cout << "=======================" << endl;
         }
-        else if(parser.commandType() == Command::Space){
-          parser.advance();
+        else if ( parser->commandType() == Command::A ){
+          cout << "=======A command=======" << endl;
+          auto symbol = parser->symbol();
+          bool isNotDigit = true;
+          for(auto iter=symbol.begin();iter!=symbol.end();iter++){
+            if(isdigit(*iter)){
+              isNotDigit=false;
+            }
+          }
+          if(isNotDigit){ // this is a variable or label
+            if (symbolTable.contains(symbol)){ // variable is already stored varieble
+              // concatinating the opcode
+              cout << "================ Allocated Variable ==========" << endl;
+              int aInt = symbolTable.getAddress(symbol);
+              auto symbolBin = "0"+bitset<15>(aInt).to_string();
+              cout << "symbol: " << symbol << endl;
+              cout << "symbolBin: " << symbolBin << endl;
+              machineCode << symbolBin ;
+              cout << "=======================" << endl;
+            }
+            else { // variable doesn't exist
+              cout << "=================A new Variable Occured =========" << endl;
+              symbolTable.addEntry(symbol,newVariableAddress);
+              newVariableAddress++;
+              int aInt = symbolTable.getAddress(symbol);
+              auto symbolBin = "0"+bitset<15>(aInt).to_string();
+              cout << "symbol: " << symbol << endl;
+              cout << "symbolBin: " << symbolBin << endl;
+              machineCode << symbolBin ;
+              cout << "============================" << endl;
+            }
+          }
+          else { // a raw number
+              int aInt = stoi(symbol);
+              auto symbolBin = "0"+bitset<15>(aInt).to_string();
+              cout << "symbol: " << symbol << endl;
+              cout << "symbolBin: " << symbolBin << endl;
+              machineCode << symbolBin ;
+              cout << "=======================" << endl;
+          }
+        }
+        else if(parser->commandType() == Command::Space){
+          parser->advance();
         }
         machineCode << endl;
       }
+      delete parser;
       hackProgram.close();
       machineCode.close();
-      // while(true){
-      //   cout << "while loop!" << endl;
-      //   string instruction;
-      //   cin >> instruction;
-      //   cout << instruction << endl;
-      //   Parser parser(instruction);
-      //   cout << "Command Type: " <<  parser.commandType() << endl;
-      //   if(parser.commandType() == Command::Comment){
-      //     parser.advance();
-      //   }
-      //   else if(parser.commandType() == Command::C){
-      //     auto dest = parser.dest();
-      //     auto comp = parser.comp();
-      //     auto jump = parser.jump();
-      //     cout << "C command " << endl;
-      //     cout << dest << '=' << comp << ';' << jump << endl;
-      //   }
-      //   else if(parser.commandType() == Command::L || parser.commandType() == Command::A){
-      //     cout << "A&L command " << endl;
-      //     cout << parser.symbol() << endl;
-      //   }
-      //   cout << parser.hasMoreCommands() << endl;
-      // }
-      hackProgram.close();
     }
     return 0;
 }

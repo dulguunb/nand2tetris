@@ -1,3 +1,5 @@
+#ifndef CODE_H
+#define CODE_H
 #include <iostream>
 #include <bitset>
 #include <map>
@@ -13,3 +15,4 @@ class Code{
     map<string,int> codeTableJump;
     map<string,int> codeTableDest;
 };
+#endif

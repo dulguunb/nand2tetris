@@ -5,7 +5,7 @@ Parser::Parser(const string &rawProgram){
   currentLetter = this->rawProgram.begin();
 }
 bool Parser::hasMoreCommands(){
-  return currentLetter != rawProgram.end();
+  return letterCnt != this->rawProgram.size() - 1;
 }
 Command Parser::commandType(){
     if(*currentLetter == '@'){
@@ -96,6 +96,7 @@ string Parser::jump(){
 }
 void Parser::advance(){
   if (hasMoreCommands()){
+    letterCnt++;
     currentLetter++;
   }
 }
