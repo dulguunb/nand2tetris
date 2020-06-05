@@ -21,7 +21,7 @@ Command Parser::commandType(){
     if(*currentLetter == '/' && *(currentLetter++) == '/'){
       return Command::Comment;
     }
-    if(isspace(*currentLetter)){
+    if(isspace(*currentLetter) || *currentLetter == '\n'){
       return Command::Space;
     }
 }
@@ -32,6 +32,7 @@ void Parser::skipComment(){
       result+=*currentLetter;
       currentLetter++;
     }
+    advance();
     cout << "comment: " << result << endl;
   }
 }
@@ -41,8 +42,9 @@ string Parser::symbol(){
       string result = "";
       // result+=*currentLetter;
       advance();
-      while(isdigit(*currentLetter) && *currentLetter != '\n'){ // constant
+      while(*currentLetter != '\n'){ // constant
         result+=*currentLetter;
+        cout << "result: " << result << endl;
         advance();
       }
     return result;
