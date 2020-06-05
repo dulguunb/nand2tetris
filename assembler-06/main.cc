@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
           string result = "111"+a+c+d+j;
           cout << "result: " << result << endl;
         }
-        else if(parser->commandType() == Command::L){
+        else if( parser->commandType() == Command::L ){
           cout << "=========L command=========" << endl;
           auto symbol = parser->symbol();
           cout << "symbol: " << symbol << endl;
@@ -70,6 +70,7 @@ int main(int argc, char *argv[]){
         else if ( parser->commandType() == Command::A ){
           cout << "=======A command=======" << endl;
           auto symbol = parser->symbol();
+          cout << "Symbol: " << symbol << endl;
           bool isDigit = true;
           int aInt;
           for(auto iter=symbol.begin();iter!=symbol.end();iter++){
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]){
             }
           }
           if(isDigit){
+            cout << "aInt: " << aInt << endl;
             int aInt = stoi(symbol);
             // concatinating the opcode
             auto symbolBin = "0"+bitset<15>(aInt).to_string();
@@ -90,13 +92,17 @@ int main(int argc, char *argv[]){
             symbolTable.addEntry(symbol,romAddress);
           }
         }
+        else{
+          parser->advance();
+        }
         cout << "PARSER END: " << parser->hasMoreCommands() << endl;
       }
       cout << "===================Second Pass ========================" << endl;
       // Second Pass
       int newVariableAddress = 16;
+      delete parser;
       parser = new Parser(rawProgram);
-      cout << "PARSER END: " << parser->hasMoreCommands() << endl;
+      cout << "=========Second Pass=========" << endl;
       while(parser->hasMoreCommands()){
         if(parser->commandType() == Command::Comment){
           parser->skipComment();
@@ -128,12 +134,10 @@ int main(int argc, char *argv[]){
           string result = "111"+a+c+d+j;
           cout << "result: " << result << endl;
           machineCode << result;
+          machineCode << endl;
         }
         else if(parser->commandType() == Command::L){
           cout << "=========L command=========" << endl;
-          auto symbol = parser->symbol();
-          cout << "symbol: " << symbol << endl;
-          symbolTable.addEntry(symbol,romAddress);
           cout << "=======================" << endl;
         }
         else if ( parser->commandType() == Command::A ){
@@ -154,6 +158,7 @@ int main(int argc, char *argv[]){
               cout << "symbol: " << symbol << endl;
               cout << "symbolBin: " << symbolBin << endl;
               machineCode << symbolBin ;
+              machineCode << endl;
               cout << "=======================" << endl;
             }
             else { // variable doesn't exist
@@ -165,6 +170,7 @@ int main(int argc, char *argv[]){
               cout << "symbol: " << symbol << endl;
               cout << "symbolBin: " << symbolBin << endl;
               machineCode << symbolBin ;
+              machineCode << endl;
               cout << "============================" << endl;
             }
           }
@@ -174,13 +180,13 @@ int main(int argc, char *argv[]){
               cout << "symbol: " << symbol << endl;
               cout << "symbolBin: " << symbolBin << endl;
               machineCode << symbolBin ;
+              machineCode << endl;
               cout << "=======================" << endl;
           }
         }
-        else if(parser->commandType() == Command::Space){
+        else{
           parser->advance();
         }
-        machineCode << endl;
       }
       delete parser;
       hackProgram.close();
