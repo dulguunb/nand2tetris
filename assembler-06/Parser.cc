@@ -1,36 +1,38 @@
 #include "Parser.h"
 using namespace std;
-Parser::Parser(const string &rawProgram){
+Parser::Parser(string rawProgram){
   this->rawProgram = rawProgram;
   currentLetter = this->rawProgram.begin();
+  cout << "Constructor of Parser: " << endl;
+  cout << rawProgram << endl;
 }
 bool Parser::hasMoreCommands(){
   return letterCnt != this->rawProgram.size() - 1;
 }
 Command Parser::commandType(){
-    if(*currentLetter == '@'){
+    if(this->rawProgram[letterCnt] == '@'){
       return Command::A;
     }
-    if(isdigit(*currentLetter) || *currentLetter == '!' || *currentLetter == '-' || *currentLetter == 'D' || *currentLetter == 'A' || *currentLetter == 'M')
+    if(isdigit(this->rawProgram[letterCnt]) || this->rawProgram[letterCnt] == '!' || this->rawProgram[letterCnt] == '-' || this->rawProgram[letterCnt] == 'D' || this->rawProgram[letterCnt] == 'A' || this->rawProgram[letterCnt] == 'M')
     {
       return Command::C;
     }
-    if(*currentLetter == '('){
+    if(this->rawProgram[letterCnt] == '('){
       return Command::L;
     }
-    if(*currentLetter == '/' && *(currentLetter++) == '/'){
+    if(this->rawProgram[letterCnt] == '/' && this->rawProgram[letterCnt++] == '/'){
       return Command::Comment;
     }
-    if(isspace(*currentLetter) || *currentLetter == '\n'){
+    if(isspace(this->rawProgram[letterCnt]) || this->rawProgram[letterCnt] == '\n'){
       return Command::Space;
     }
 }
 void Parser::skipComment(){
   if(commandType() == Command::Comment){
     string result = "";
-    while(*currentLetter != '\n'){
-      result+=*currentLetter;
-      currentLetter++;
+    while(this->rawProgram[letterCnt] != '\n' && hasMoreCommands()){
+      result+=this->rawProgram[letterCnt];
+      advance();
     }
     advance();
     cout << "comment: " << result << endl;
@@ -40,21 +42,21 @@ string Parser::symbol(){
   auto currentCommandType = commandType();
   if(currentCommandType == Command::A){
       string result = "";
-      // result+=*currentLetter;
+      // result+=this->rawProgram[letterCnt];
       advance();
-      while(*currentLetter != '\n'){ // constant
-        result+=*currentLetter;
-        cout << "result: " << result << endl;
+      while(this->rawProgram[letterCnt] != '\n' && hasMoreCommands()){ // constant
+        result+=this->rawProgram[letterCnt];
+        // cout << "hasMoreCommand: " << hasMoreCommands() << endl;
         advance();
       }
     return result;
   }
   if (currentCommandType == Command::L){
       string result = "";
-      // result+=*currentLetter;
+      // result+=this->rawProgram[letterCnt];
       advance();
-      while(*currentLetter != ')'){ // constant
-        result+=*currentLetter;
+      while(this->rawProgram[letterCnt] != ')' && hasMoreCommands()){ // constant
+        result+=this->rawProgram[letterCnt];
         advance();
       }
   }
@@ -63,8 +65,8 @@ string Parser::symbol(){
 string Parser::dest(){
   if (commandType() == Command::C){
     string result = "";
-    while(*currentLetter != '='){
-      result+=*currentLetter;
+    while(this->rawProgram[letterCnt] != '=' && hasMoreCommands()){
+      result+=this->rawProgram[letterCnt];
       advance();
     }
     advance();
@@ -75,8 +77,8 @@ string Parser::dest(){
 string Parser::comp(){
   if(commandType() == Command::C){
     string result;
-    while(*currentLetter != ';' && *currentLetter != '\n' && *currentLetter != EOF){
-      result+=*currentLetter;
+    while(this->rawProgram[letterCnt] != ';' && this->rawProgram[letterCnt] != '\n' && this->rawProgram[letterCnt] != EOF && hasMoreCommands()){
+      result+=this->rawProgram[letterCnt];
       advance();
     }
     advance();
@@ -87,8 +89,9 @@ string Parser::comp(){
 string Parser::jump(){
   if (commandType() == Command::C){
     string result;
-    while(*currentLetter != '\n' && *currentLetter != EOF){
-      result+=*currentLetter;
+    while(this->rawProgram[letterCnt] != '\n' && this->rawProgram[letterCnt] != EOF
+    && hasMoreCommands()){
+      result+=this->rawProgram[letterCnt];
       advance();
     }
     advance();
@@ -99,6 +102,5 @@ string Parser::jump(){
 void Parser::advance(){
   if (hasMoreCommands()){
     letterCnt++;
-    currentLetter++;
   }
 }

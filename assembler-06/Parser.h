@@ -15,7 +15,7 @@ class Parser{
   public:
     string::iterator currentLetter;
     vector<vector<Command>> tokens;
-    Parser(const string &rawProgram);
+    Parser(string rawProgram);
     void advance();
     void skipComment();
     bool hasMoreCommands();
