@@ -1,18 +1,27 @@
 #include "Code.h"
-int Code::dest(string mnemocis){
-  if(mnemocis=="")
+int Code::dest(string mnemonics){
+  removeWhiteSpace(mnemonics);
+  if(mnemonics=="")
     return codeTableDest["null"];
 
-  return codeTableDest[mnemocis];
+  return codeTableDest[mnemonics];
 }
-pair<int,int> Code::comp(string mnemocis){
-  return codeTableComp[mnemocis];
+void Code::removeWhiteSpace(string &mnemonics){
+  mnemonics.erase(remove_if(mnemonics.begin(),mnemonics.end(),[](const char &element){
+      return (element == ' ' || element == '\n' || element == '\r' || element == '\t' || element == '\f');
+  }),mnemonics.end());
 }
-int Code::jump(string mnemocis){
-  if(mnemocis=="")
+pair<int,int> Code::comp(string mnemonics){
+  // Fixing the error occured during parsing
+  removeWhiteSpace(mnemonics);
+  return codeTableComp[mnemonics];
+}
+int Code::jump(string mnemonics){
+  removeWhiteSpace(mnemonics);
+  if(mnemonics=="")
     return codeTableJump["null"];
 
-  return codeTableJump[mnemocis];
+  return codeTableJump[mnemonics];
 }
 Code::Code(){
   codeTableComp["0"] = make_pair(0b101010,0b0);

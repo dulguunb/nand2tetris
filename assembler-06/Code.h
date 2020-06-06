@@ -1,5 +1,7 @@
 #ifndef CODE_H
 #define CODE_H
+#include <algorithm>
+#include <string>
 #include <iostream>
 #include <bitset>
 #include <map>
@@ -14,5 +16,6 @@ class Code{
     map<string,pair<int,int>> codeTableComp;
     map<string,int> codeTableJump;
     map<string,int> codeTableDest;
+    void removeWhiteSpace(string &);
 };
 #endif
