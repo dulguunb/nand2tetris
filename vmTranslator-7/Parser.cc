@@ -2,11 +2,10 @@
 Parser::Parser(string filename){
   program.open(filename);
   lineCnt = 0;
-  string line;
-  while(getline(program,line)){
+  for(string line; getline(program,line);){
     rawProgram.push_back(line);
   }
-  currentLine = rawProgram[lineCnt];
+  currentLine = *(rawProgram.begin() + lineCnt);
 }
 string Parser::getCurrentLine(){
   return currentLine;
@@ -16,8 +15,8 @@ bool Parser::hasMoreCommands(){
 }
 void Parser::advance(){
   if(hasMoreCommands()){
-      currentLine = rawProgram[lineCnt];
-      lineCnt++;
+    lineCnt++;
+    currentLine = *(rawProgram.begin()+lineCnt);
   }
 }
 CommandType Parser::commandType(){
@@ -25,19 +24,16 @@ CommandType Parser::commandType(){
   string keyword="";
   for(string::iterator iter=currentLine.begin();iter!=currentLine.end();iter++){
     if(!isspace(*iter)){
-      keyword +=* iter;
+      keyword +=*iter;
     }
     else{
       if(keyword == "push"){
-        cout << lineCnt << ") C_PUSH" << endl;
         result = CommandType::C_PUSH;
       }
       else if(keyword == "pop"){
-        cout << lineCnt << ") C_POP" << endl;
         result = CommandType::C_POP;
       }
       else if(keyword == "add" || keyword == "sub"){
-        cout << lineCnt << ") add|sub" << endl;
         result = CommandType::C_ARITHMETIC;
       }
       tokens.push_back(keyword);
@@ -48,18 +44,22 @@ CommandType Parser::commandType(){
   return result;
 }
 string Parser::arg1(){
-  string result = "";
   CommandType type = commandType();
+  string result = *(tokens.end()-2);
   if (type == CommandType::C_ARITHMETIC){
-    result = tokens[0];
+    result = *(tokens.begin());
   }
   return result;
 }
 int Parser::arg2(){
   CommandType type = commandType();
   int result = -1;
-  if (type == CommandType::C_PUSH || type == CommandType::C_POP || type == CommandType::C_FUNCTION || type == CommandType::C_CALL){
-    result = stoi(*(tokens.end()-1));
+  if (type == CommandType::C_PUSH ||
+      type == CommandType::C_POP ||
+      type == CommandType::C_FUNCTION ||
+      type == CommandType::C_CALL){
+
+    result = stoi(*(tokens.end() - 1));
   }
   return result;
 }
