@@ -14,8 +14,8 @@ bool Parser::hasMoreCommands(){
   return lineCnt < rawProgram.size();
 }
 void Parser::advance(){
+  lineCnt++;
   if(hasMoreCommands()){
-    lineCnt++;
     currentLine = *(rawProgram.begin()+lineCnt);
   }
 }
@@ -54,11 +54,10 @@ string Parser::arg1(){
 int Parser::arg2(){
   CommandType type = commandType();
   int result = -1;
-  if (type == CommandType::C_PUSH ||
-      type == CommandType::C_POP ||
-      type == CommandType::C_FUNCTION ||
-      type == CommandType::C_CALL){
-
+  if ( type == CommandType::C_PUSH ||
+       type == CommandType::C_POP ||
+       type == CommandType::C_FUNCTION ||
+       type == CommandType::C_CALL ){
     result = stoi(*(tokens.end() - 1));
   }
   return result;
