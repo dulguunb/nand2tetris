@@ -20,12 +20,12 @@ class Parser{
   private:
     int lineCnt;
     int lineLength;
+    vector<string> tokenize();
     vector<string> rawProgram;
     string currentLine;
     ifstream program;
     string _arg1;
     int _arg2;
-    vector<string> tokens;
 };
 
 #endif
