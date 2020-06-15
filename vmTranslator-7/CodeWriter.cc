@@ -32,57 +32,137 @@ CodeWriter::~CodeWriter(){
   assemblyFile.close();
 }
 void CodeWriter::writeArithmetic(string argument){
+  string assembly = "";
   if (argument == "add"){
-    string assembly="";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n";
-    assembly+="@"+to_string(sp)+"\n";
-    assembly+="M=M+D\n";
-    assemblyFile << assembly;
+    /*
+         x
+         y
+    sp- >
+    ========> add
+          x+y
+    sp -> 
+    */
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="M=M+D\n"; // x=x+y
+    assembly+="@R0\nM=M-1\n"; // sp--
   }
+   /*
+         x
+         y
+    sp- >
+    ========> add
+          x-y
+    sp -> 
+    */
   if (argument == "sub"){
-    string assembly="";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n";
-    assembly+="@"+to_string(sp)+"\n";
-    assembly+="M=M-D\n";
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="M=M-D\n"; // x=x-y
+    assembly+="@R0\nM=M-1\n"; // sp--
+  }
+  if(argument == "neg"){
+    assembly+="@R0\n";
+    assembly+="M=A-1\nM=0-M\n";
+  }
+  if (argument == "eq"){
+    assembly+="@R0\n";
+    assembly+="@M=A-1\nD=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="D;JEQ\n"; // if D == 0
+    assembly+="M=A-1\nM=1\n";//  set A-1 to M=1 -> True
+    assembly+="@R0\n";
+    assembly+="M=A-1\nM=0\n"; //  set A-1 to M=0 -> False
   }
   if (argument == "gt"){
-    string assembly = "";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n";
-    assembly+="@"+to_string(sp)+"\n";
-    assembly+="D=M-D\n";
-    // "@"+to_string(sp-1) + "\n";
-    // "D;JGT"
-    // int a = stoi(stack.back());
-    // stack.pop_back();
-    // int b = stoi(stack.back());
-    // stack.pop_back();
-    // string _return = "false";
-    // if (a>b){
-    //     _return = "true";
-    // }
-    // stack.push_back(_return);
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="D=M-D\n"; // z=(y - x)
+    assembly+="@fliptrue\n";
+    assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=0\n"; // M=false
+    assembly+="@R0\nM=M-1\n"; // sp --
+    assembly+="0;JMP\n";// jump to the end
+    assembly+="(fliptrue)\n";
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=1\n"; // M=true
   }
   if (argument == "lt"){
-    // int a = stoi(stack.back());
-    // stack.pop_back();
-    // int b = stoi(stack.back());
-    // stack.pop_back();
-    // string _return = "false";
-    // if (a<b){
-    //     _return = "true";
-    // }
-    // stack.push_back(_return);
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="D=M-D\n"; // z=(y - x)
+    assembly+="@flipfalse\n";
+    assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=1\n"; // M=true
+    assembly+="@R0\nM=M-1\n"; // sp --
+    assembly+="0;JMP\n";
+    assembly+="(flipfalse)\n";
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=0\n"; // M=false
+    assembly+="@R0\nM=M-1\n"; // sp --
   }
-  sp--;
-  // init+="@R0\n";
-  // init+="M="+to_string(sp)+"\n";
-  // init+="@"+to_string(sp)+"\n";
-  // init+="M="+stack.back();
-  // assemblyFile << init;
-  
+  if(argument == "and"){
+    assembly+="@2\n";
+    assembly+="D=A\n";
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M-1\n"; // 2 - (y)
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="@R0\nD=D-1\n"; // 2 - (x)
+    assembly+="@fliptrue\n";
+    assembly+="D;JEQ\n";
+    assembly+="@R0\n";
+    assembly+="@M=A-2\nM=0\n"; // M=false
+    assembly+="0;JMP\n";
+    assembly+="(fliptrue)\n"; // M = true
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=1\n"; // M=true
+    assembly+="@R0\nM=M-1\n"; // sp --
+  }
+  if(argument == "or"){
+    assembly+="@0\n";
+    assembly+="D=A\n";
+    assembly+="@R0\n";
+    assembly+="M=A-1\nD=M-1\n"; // 0 - (y)
+    assembly+="@R0\n";
+    assembly+="M=A-2\n"; // x
+    assembly+="@R0\nD=D-1\n"; // 0 - (x)
+    assembly+="@fliptrue\n";
+    assembly+="D;JLT\n";
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=0\n"; // M=false
+    assembly+="@R0\nM=M-1\n"; // sp --
+    assembly+="0;JMP\n";
+    assembly+="(fliptrue)\n"; // M = true
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=1\n"; // M=true
+    assembly+="@R0\nM=M-1\n"; // sp --
+  }
+  if(argument == "not"){
+    assembly+="@R0\n";
+    assembly+="M=A-2\nD=M\n"; // x
+    assembly+="@fliptrue\n";
+    assembly+="D;JEQ\n";
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=0\n"; // M=false
+    assembly+="@R0\nM=M-1\n"; // sp --
+    assembly+="0;JMP\n";
+    assembly+="(fliptrue)\n"; // M = true
+    assembly+="@R0\n";
+    assembly+="M=A-2\nM=1\n"; // M=true
+    assembly+="@R0\nM=M-1\n"; // sp --
+  }
+  assemblyFile << assembly;
 }
 void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   string assembly="";
@@ -121,7 +201,6 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="A=M\nM="+to_string(index) + "\n";
     assembly+="@R0\n";
     assembly+="M=M+1\n";
-    sp++;
   }
   if (type == CommandType::C_POP && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
@@ -130,14 +209,13 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="A=M-1\nD=M\n";
     assembly+="//static variable " + currentStaticVariable + " is now created\n";
     assembly+="@"+currentStaticVariable+"\n";
-    assembly+="M=D\n"
+    assembly+="M=D\n";
     assembly+="@R0\n";
     assembly+="M=M-1\n";
   }
   if (type == CommandType::C_PUSH && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Pushing an element from stack\n";
-    
     assembly+="//static variable " + currentStaticVariable + " is now created\n";
     assembly+="@"+currentStaticVariable+"\n";
     assembly+="D=M\n";
