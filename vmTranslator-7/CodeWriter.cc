@@ -11,7 +11,19 @@ CodeWriter::CodeWriter(string filename){
   segmentConverter["this"] = "THIS";
   segmentConverter["that"] = "THAT";
   segmentConverter["temp"] = "TMP";
-  staticVariableName=filename;
+  staticVariableName="";
+  auto iter = filename.begin();
+  do{
+    if (*iter != '.'){
+      if ( *iter == '/'){
+        staticVariableName="";
+      }
+      else {
+        staticVariableName+=*iter;
+      }
+      iter++;
+    }
+  }while(*iter != '.' && iter != filename.end());
   assemblyFile.open(filename+".asm");
   string init="";
   init+="@"+to_string(baseAddresses["sp"])+"\n";
@@ -262,7 +274,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@1\nD=A\n";
     assembly+="@R0\n";
     assembly+="A=M-D\nD=M\n";
-    assembly+="//static variable " + currentStaticVariable + " is now created\n";
+    assembly+="// static variable " + currentStaticVariable + "\n";
     assembly+="@"+currentStaticVariable+"\n";
     assembly+="M=D\n";
     assembly+="@1\nD=A\n";
@@ -272,7 +284,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   if(type == CommandType::C_PUSH && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Pushing an element from stack\n";
-    assembly+="//static variable " + currentStaticVariable + " is now created\n";
+    assembly+="// static variable " + currentStaticVariable+"\n";
     assembly+="@"+currentStaticVariable+"\n";
     assembly+="D=M\n";
     assembly+="@R0\n";
@@ -283,14 +295,14 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     sp++;
   }
   if(type == CommandType::C_POP && segment == "pointer"){
-    string pointer;
+    string pointer = "";
     if(index == 0){
       // this pointer
-      pointer = baseAddresses["THIS"];
+      pointer = "@R3\n";
     }
     else if(index == 1){
       // that pointer
-      pointer = baseAddresses["THAT"];
+      pointer = "@R4\n";
     }
     else{
       cout << "ERROR: This/That pointer only needs 0/1 index" << endl;
@@ -298,33 +310,31 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// pop pointer\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\n";
-    assembly+="A=M-D\nD=M\n";
-    assembly="@"+pointer+"\n";
+    assembly+="M=M-D\nD=M\n";
+    assembly+=pointer;
     assembly+="M=D\n";
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
     sp--;
   }
   if (type == CommandType::C_PUSH && segment == "pointer"){
-    string pointer;
+    string pointer = "";
     if(index == 0){
       // this pointer
-      pointer = baseAddresses["THIS"];
+      pointer = "@R3\n";
     }
     else if(index == 1){
       // that pointer
-      pointer = baseAddresses["THAT"];
+      pointer = "@R4\n";
     }
     else{
       cout << "ERROR: This/That pointer only needs 0/1 index" << endl;
     }
     assembly+="// push pointer\n";
-    assembly="@"+pointer+"\n";
+    assembly+=pointer;
     assembly+="D=M\n";
     assembly+="@R0\n";
     assembly+="A=M\nM=D\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp ++
+    assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
   }
   assemblyFile << assembly;
