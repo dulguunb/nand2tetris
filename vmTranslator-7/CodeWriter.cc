@@ -1,9 +1,9 @@
 #include "CodeWriter.h"
 CodeWriter::CodeWriter(string filename){
-  baseAddresses["LCL"] = 1015;
-  baseAddresses["ARG"] = 2015;
-  baseAddresses["THIS"] = 3015;
-  baseAddresses["THAT"] = 4015;
+  baseAddresses["LCL"] = 300;
+  baseAddresses["ARG"] = 400;
+  baseAddresses["THIS"] = 3000;
+  baseAddresses["THAT"] = 3010;
   baseAddresses["TMP"] = 5;
   baseAddresses["sp"] = 256;
   segmentConverter["local"] = "LCL";
@@ -215,7 +215,6 @@ void CodeWriter::writeArithmetic(string argument){
 }
 void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   string assembly="";
-  
   if(type == CommandType::C_POP
   && 
   (segment == "local" || segment == "argument" || 
@@ -243,20 +242,21 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@R0\n";
     assembly+="A=M\nM=D\n"; // push the value to the stack
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp --
+    assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
   }
   if(type == CommandType::C_PUSH && segment == "constant"){
     assembly+="// PUSH CONSTANT " + to_string(index) + "\n";
     assembly+="@"+to_string(index)+"\n";
-    assembly="D=A\n";
+    assembly+="D=A\n";
     assembly+="@R0\n";
     assembly+="A=M\nM=D\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
+    cout << assembly << endl;
   }
-  if (type == CommandType::C_POP && segment == "static"){
+  if(type == CommandType::C_POP && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Popping an element from stack\n";
     assembly+="@1\nD=A\n";
@@ -269,7 +269,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@R0\nM=M-D\n"; // sp --
     sp--;
   }
-  if (type == CommandType::C_PUSH && segment == "static"){
+  if(type == CommandType::C_PUSH && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Pushing an element from stack\n";
     assembly+="//static variable " + currentStaticVariable + " is now created\n";
@@ -282,7 +282,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
   }
-  if (type == CommandType::C_POP && segment == "pointer"){
+  if(type == CommandType::C_POP && segment == "pointer"){
     string pointer;
     if(index == 0){
       // this pointer
