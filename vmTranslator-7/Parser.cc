@@ -49,15 +49,15 @@ vector<string> Parser::tokenize(){
   string keyword="";
   for(string::iterator iter=currentLine.begin();
       iter!=currentLine.end();iter++){
-    if(!isspace(*iter)){
-      keyword +=*iter;
-    }
-    else{
+    if(isspace(*iter)){
       tokens.push_back(keyword);
       keyword="";
     }
+    else {
+     keyword +=*iter;
+    }
   }
-  // tokens.push_back(keyword);
+  tokens.push_back(keyword);
   return tokens;
 }
 string Parser::arg1(){
@@ -68,7 +68,8 @@ string Parser::arg1(){
     result = *(tokens.begin());
   }
   else{
-    result = *(tokens.end()-2);
+    cout << "result arg1: " << *(tokens.begin()) << endl;
+    result = *(tokens.begin()+1);
   }
   return result;
 }
@@ -80,7 +81,9 @@ int Parser::arg2(){
        type == CommandType::C_POP ||
        type == CommandType::C_FUNCTION ||
        type == CommandType::C_CALL ){
-    result = stoi(*(tokens.end() - 1));
+    cout <<"token.end(): " << *(tokens.begin() + 2) << endl;
+    result = stoi(*(tokens.begin() + 2));
+    cout << "result: " << result << endl;
   }
   return result;
 }

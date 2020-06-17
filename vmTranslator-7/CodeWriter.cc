@@ -152,7 +152,7 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="@R0\nM=M-D\n"; // sp --
     assembly+="0;JMP\n";
     assembly+="(flipfalse)\n";
-    assembly+="@"+to_string(sp-2);
+    assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=0\n"; // M=false
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
@@ -236,7 +236,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
 
     assembly+="@"+to_string(index)+"\nD=A\n";
     assembly+="@"+segmentConverter[segment]+"\n";
-    assembly+="D=D+A\n@a\nM=D\n"; // addr=LCL+i
+    assembly+="D=D+M\n@a\nM=D\n"; // addr=LCL+i
 
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
@@ -248,14 +248,14 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   if(type == CommandType::C_PUSH
   &&
   (segment == "local" || segment == "argument" || 
-  segment == "this"  || segment == "that" || segment == "temp")
+  segment == "this"  || segment == "that")
   ){
     int offset =   baseAddresses[segmentConverter[segment]] + index;
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
     
     assembly+="@"+to_string(index)+"\nD=A\n";
     assembly+="@"+segmentConverter[segment]+"\n";
-    assembly+="D=D+A\n@a\nM=D\n"; // addr - segment + i
+    assembly+="D=D+M\n@a\nM=D\n"; // addr = segment + i
 
     assembly+="@a\nA=M\nD=M\n";
     assembly+="@R0\n";
@@ -304,7 +304,6 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
-    cout << assembly << endl;
   }
   if(type == CommandType::C_POP && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
