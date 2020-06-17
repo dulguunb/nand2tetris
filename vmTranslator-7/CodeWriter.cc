@@ -6,11 +6,10 @@ CodeWriter::CodeWriter(string filename){
   baseAddresses["THAT"] = 3010;
   baseAddresses["TMP"] = 5;
   baseAddresses["sp"] = 256;
-  segmentConverter["local"] = "LCL";
-  segmentConverter["argument"] = "ARG";
-  segmentConverter["this"] = "THIS";
-  segmentConverter["that"] = "THAT";
-  segmentConverter["temp"] = "TMP";
+  segmentConverter["local"] = "R1";
+  segmentConverter["argument"] = "R2";
+  segmentConverter["this"] = "R3";
+  segmentConverter["that"] = "R4";
   staticVariableName="";
   auto iter = filename.begin();
   do{
@@ -210,7 +209,7 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="M=A-2\nD=M\n"; // x
     assembly+="@fliptrue\n";
     assembly+="D;JEQ\n";
-    assembly+="@"+to_string(sp-2);
+    assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=0\n"; // M=false
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
@@ -230,17 +229,21 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   if(type == CommandType::C_POP
   && 
   (segment == "local" || segment == "argument" || 
-   segment == "this" || segment == "that" || segment == "temp")){
+   segment == "this" || segment == "that")){
     int offset = baseAddresses[segmentConverter[segment]] + index;
     sp--;
     assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\n";
-    assembly+="A=M-D\nD=M\n"; // go to the address where sp-1 points at and save it
-    assembly+="@"+to_string(offset)+"\n";
-    assembly+="M=D\n";
+
+    assembly+="@"+to_string(index)+"\nD=A\n";
+    assembly+="@"+segmentConverter[segment]+"\n";
+    assembly+="D=D+A\n@a\nM=D\n"; // addr=LCL+i
+
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+
+    assembly+="@R0\n";
+    assembly+="A=M\nD=M\n"; // *addr=*SP
+    assembly+="@a\nA=M\nM=D\n";
   }
   if(type == CommandType::C_PUSH
   &&
@@ -249,13 +252,48 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   ){
     int offset =   baseAddresses[segmentConverter[segment]] + index;
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
-    assembly+="@"+to_string(offset)+"\n";
-    assembly+="D=M\n";
+    
+    assembly+="@"+to_string(index)+"\nD=A\n";
+    assembly+="@"+segmentConverter[segment]+"\n";
+    assembly+="D=D+A\n@a\nM=D\n"; // addr - segment + i
+
+    assembly+="@a\nA=M\nD=M\n";
     assembly+="@R0\n";
-    assembly+="A=M\nM=D\n"; // push the value to the stack
+    assembly+="A=M\nM=D\n"; // *SP=*addr
+
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
+  }
+  if(type == CommandType::C_PUSH && segment == "temp"){
+    assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
+
+    assembly+="@"+to_string(index)+"\nD=A\n";
+    assembly+="@5\n";
+    assembly+="D=D+A\n@a\nM=D\n"; // addr= 5 + i
+
+    assembly+="@a\nA=M\nD=M\n";
+    assembly+="@R0\n";
+    assembly+="A=M\nM=D\n"; // *SP=*addr
+
+    assembly+="@1\nD=A\n";
+    assembly+="@R0\nM=M+D\n"; // sp ++
+    sp++;
+  }
+  if(type == CommandType::C_POP && segment == "temp"){
+    assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
+
+    assembly+="@"+to_string(index)+"\nD=A\n";
+    assembly+="@5\n";
+    assembly+="D=D+A\n@a\nM=D\n"; // addr=5+i
+
+    assembly+="@1\nD=A\n";
+    assembly+="@R0\nM=M-D\n"; // sp --
+
+    assembly+="@R0\n";
+    assembly+="A=M\nD=M\n"; // *addr=*SP
+    assembly+="@a\nA=M\nM=D\n";
+    sp--;
   }
   if(type == CommandType::C_PUSH && segment == "constant"){
     assembly+="// PUSH CONSTANT " + to_string(index) + "\n";
@@ -310,7 +348,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// pop pointer\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\n";
-    assembly+="M=M-D\nD=M\n";
+    assembly+="M=M-D\nA=M\nD=M\n";
     assembly+=pointer;
     assembly+="M=D\n";
     sp--;
@@ -331,8 +369,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// push pointer\n";
     assembly+=pointer;
     assembly+="D=M\n";
-    assembly+="@R0\n";
-    assembly+="A=M\nM=D\n";
+    assembly+="@R0\nA=M\nM=D\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
     sp++;
