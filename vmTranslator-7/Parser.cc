@@ -29,7 +29,8 @@ CommandType Parser::commandType(){
   for(string::iterator iter=currentLine.begin();
     iter!=currentLine.end();iter++){
     keyword+=*iter;
-    if(keyword == "add" || keyword == "sub"){
+    if(keyword == "add" || keyword == "sub" || keyword == "eq" || keyword == "lt"
+    || keyword == "gt" || keyword == "not" || keyword == "and" || keyword == "or"){
       cout << "CommandType::C_ARITHMETIC" << endl;
       return CommandType::C_ARITHMETIC;
     }

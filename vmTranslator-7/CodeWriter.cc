@@ -116,6 +116,9 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="(fliptrue)\n";
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
+    assembly+="@1\nD=A\n";
+    assembly+="@R0\n";
+    assembly+="M=M-D\n";
     assembly+="// END OF AND opeartion on the stack\n";
     sp--;
   }
@@ -133,8 +136,12 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="@R0\nM=M-D\n"; // sp --
     assembly+="0;JMP\n";// jump to the end
     assembly+="(fliptrue)\n";
-    assembly+="@"+to_string(sp-2);
+    assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
+
+    assembly+="@1\nD=A\n";
+    assembly+="@R0\n";
+    assembly+="M=M-D\n";
     assembly+="// END OF AND opeartion on the stack\n";
     sp--;
   }
@@ -169,7 +176,7 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="D=D-M\n"; // D=z-(x)
     assembly+="@fliptrue\n";
     assembly+="D;JEQ\n";
-    assembly+="@\n"+to_string(sp-2);
+    assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=0\n"; // M=false
     assembly+="0;JMP\n";
     assembly+="(fliptrue)\n"; // M = true
@@ -205,21 +212,20 @@ void CodeWriter::writeArithmetic(string argument){
   }
   if(argument == "not"){
     assembly+="// START OF NOT opeartion on the stack\n";
-    assembly+="@R0\n";
-    assembly+="M=A-2\nD=M\n"; // x
+    assembly+="@"+to_string(sp-2)+"\nD=M\n"; // x
     assembly+="@fliptrue\n";
     assembly+="D;JEQ\n";
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=0\n"; // M=false
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
+    assembly+="// @1\nD=A\n";
+    assembly+="/ /@R0\nM=M-D\n"; // sp --
     assembly+="0;JMP\n";
     assembly+="(fliptrue)\n"; // M = true
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-    assembly+="0;JMP\n";
+    assembly+="// @R0\nM=M-D\n"; // sp --
+    assembly+="// 0;JMP\n";
     assembly+="// START OF NOT opeartion on the stack\n";
   }
   assemblyFile << assembly;
