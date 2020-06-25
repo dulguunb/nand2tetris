@@ -30,7 +30,7 @@ CommandType Parser::commandType(){
     iter!=currentLine.end();iter++){
     keyword+=*iter;
     if(keyword == "add" || keyword == "sub" || keyword == "eq" || keyword == "lt"
-    || keyword == "gt" || keyword == "not" || keyword == "and" || keyword == "or"){
+    || keyword == "gt" || keyword == "not" || keyword == "and" || keyword == "or" || keyword == "neg"){
       cout << "CommandType::C_ARITHMETIC" << endl;
       return CommandType::C_ARITHMETIC;
     }

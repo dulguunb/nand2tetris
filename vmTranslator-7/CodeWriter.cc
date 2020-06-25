@@ -54,55 +54,31 @@ CodeWriter::~CodeWriter(){
 }
 void CodeWriter::writeArithmetic(string argument){
   string assembly = "";
-  if (argument == "add"){
-    assembly+="// START OF ADD opeartion on the stack\n";
-    /*
-         x
-         y
-    sp- >
-    ========> add
-          x+y
-    sp -> 
-    */
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n"; // y
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=M+D\n"; // x=x+y
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp--
-    assembly+="// END OF add opeartion on the stack\n";
-    sp--;
-  }
-   /*
-         x
-         y
-    sp- >
-    ========> add
-          x-y
-    sp -> 
-    */
-  if (argument == "sub"){
-    assembly+="// START OF SUB opeartion on the stack\n";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n"; // y
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=M-D\n"; // x=x+y
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp--
-    sp--;
-    assembly+="// END OF sub opeartion on the stack\n";
-  }
-  if(argument == "neg"){
-    assembly+="// START OF NEG opeartion on the stack\n";
-    assembly+="@0\nD=A\n";
+  map<string,string> arguments = {{"add","+"},{"sub","-"},
+    {"neg","-"},{"not","!"},{"and","&"},{"or","|"}};
+  if(argument == "neg" || argument == "not"){
+    assembly+="// START of "+ argument +" opeartion on the stack\n";
     assembly+="@R0\n";
-    assembly+="M=A-1\nM=D-M\n";
-    assembly+="// END OF neg opeartion on the stack\n";
+    assembly+="M=M-1\n"; // sp --
+    assembly+="A=M\n";
+    assembly+="M="+arguments[argument]+"M\n";
+    assembly+="// End of "+ argument +" opeartion on the stack\n";
+  }
+  if (argument == "add" || argument == "sub" ||  argument == "and" ||  argument == "or"){
+    assembly+="// START OF "+ argument +" opeartion on the stack\n";
+    assembly+="@R0\n";
+    assembly+="M=M-1\n"; // sp --
+    // SP points to x
+    assembly+="A=M\n"; // go to sp--
+    assembly+="D=M\n"; // store it
+    assembly+="A=A-1\n"; // go to (sp-2)
+    assembly+="M=M"+arguments[argument]+"D\n";
+    assembly+="// End OF "+ argument +" opeartion on the stack\n";
   }
   if (argument == "eq"){
     assembly+="// START OF EQ opeartion on the stack\n";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n"; // y
+    assembly+="@R0\n";
+    assembly+="M=M-1\n"; // y
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="D=M-D\n";
     assembly+="@fliptrue\n";
@@ -124,24 +100,24 @@ void CodeWriter::writeArithmetic(string argument){
   }
   if (argument == "gt"){
     assembly+="// START OF GT opeartion on the stack\n";
+
     assembly+="@"+to_string(sp-1)+"\n";
     assembly+="D=M\n"; // y
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="D=D-M\n"; // y-x
     assembly+="@fliptrue\n";
     assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+
+    assembly+="@"+to_string(sp-2)+"\n";
+    assembly+="M=0\n"; // M=false
     assembly+="0;JMP\n";// jump to the end
     assembly+="(fliptrue)\n";
+
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
 
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\n";
-    assembly+="M=M-D\n";
     assembly+="// END OF AND opeartion on the stack\n";
     sp--;
   }
@@ -151,12 +127,14 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="D=M\n"; // y
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="D=D-M\n"; // z=(y - x)
+
     assembly+="@flipfalse\n";
     assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+
     assembly+="0;JMP\n";
     assembly+="(flipfalse)\n";
     assembly+="@"+to_string(sp-2)+"\n";
@@ -174,16 +152,24 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="D=D-M\n"; // z=2 - (y)
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="D=D-M\n"; // D=z-(x)
+    
     assembly+="@fliptrue\n";
     assembly+="D;JEQ\n";
+    
+    assembly+="@1\nD=A\n";
+    assembly+="@R0\nM=M-D\n"; // sp --
+
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=0\n"; // M=false
     assembly+="0;JMP\n";
+    
     assembly+="(fliptrue)\n"; // M = true
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+
+    assembly+="@"+to_string(sp-2)+"\n";
+    assembly+="M=1\n"; // M=true
+
     assembly+="// END OF AND opeartion on the stack\n";
     sp--;
   }
@@ -197,36 +183,21 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="D=D-M\n"; // z - (x)
     assembly+="@fliptrue\n";
     assembly+="D;JLT\n";
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
+
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+    assembly+="@"+to_string(sp-2)+"\n";
+    assembly+="M=0\n"; // M=false
     assembly+="0;JMP\n";
+
     assembly+="(fliptrue)\n"; // M = true
     assembly+="@"+to_string(sp-2)+"\n";
     assembly+="M=1\n"; // M=true
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
+    
     assembly+="// END OF OR opeartion on the stack\n";
     sp--;
-  }
-  if(argument == "not"){
-    assembly+="// START OF NOT opeartion on the stack\n";
-    assembly+="@"+to_string(sp-2)+"\nD=M\n"; // x
-    assembly+="@fliptrue\n";
-    assembly+="D;JEQ\n";
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
-    assembly+="// @1\nD=A\n";
-    assembly+="/ /@R0\nM=M-D\n"; // sp --
-    assembly+="0;JMP\n";
-    assembly+="(fliptrue)\n"; // M = true
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-    assembly+="@1\nD=A\n";
-    assembly+="// @R0\nM=M-D\n"; // sp --
-    assembly+="// 0;JMP\n";
-    assembly+="// START OF NOT opeartion on the stack\n";
   }
   assemblyFile << assembly;
 }
