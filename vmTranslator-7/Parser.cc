@@ -42,6 +42,18 @@ CommandType Parser::commandType(){
       cout << "CommandType::C_POP" << endl;
       return CommandType::C_POP;
     }
+    if(keyword == "if-goto"){
+      cout << "CommandType::IF" << endl;
+      return CommandType::C_IF;
+    }
+    if (keyword == "goto"){
+      cout << "CommandType::C_GOTO" << endl;
+      return CommandType::C_GOTO;
+    }
+    if(keyword == "label"){
+      cout << "CommandType::C_LABEL" << endl;
+      return CommandType::C_LABEL;
+    }
   }
   return result;
 }
@@ -65,7 +77,8 @@ string Parser::arg1(){
   CommandType type = commandType();
   auto tokens = tokenize();
   string result = "";
-  if (type == CommandType::C_ARITHMETIC){
+  if (type == CommandType::C_ARITHMETIC || type == CommandType::C_LABEL
+  || type == CommandType::C_GOTO || type == CommandType::C_IF){
     result = *(tokens.begin());
   }
   else{

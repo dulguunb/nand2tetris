@@ -255,3 +255,30 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   }
   assemblyFile << assembly;
 }
+
+void CodeWriter::WriteBranching(CommandType type,string argument){
+  string assembly = "";
+  if(type == CommandType::C_GOTO){
+    assembly+="// CommandType::C_GOTO start\n";
+    assembly+="@"+argument+"\n";
+    assembly+="0;JMP\n";
+    assembly+="// CommandType::C_GOTO end\n";
+  }
+  if(type == CommandType::C_IF){
+    assembly+="// CommandType::C_IF start\n";
+    assembly+="@R0\n";
+    assembly+="M=M-1\n";
+    assembly+="A=D\n";
+    assembly+="D=M+1\n";
+    assembly+="@"+argument+"\n";
+    assembly+="D;JEQ\n"; // if it's 0 then it must be true
+    // else just carry on with the execution
+    assembly+="// CommandType::C_IF end\n";
+  }
+  if(type == CommandType::C_LABEL){
+    assembly+="// CommandType::C_LABEL start\n";
+    assembly+="("+argument+")\n";
+    assembly+="// CommandType::C_LABEL end\n";
+  }
+  assemblyFile << assembly;
+}
