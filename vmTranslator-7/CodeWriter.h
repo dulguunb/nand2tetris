@@ -16,6 +16,7 @@ class CodeWriter{
     string staticVariableName;
     vector<string> stack;
     int spBase = 256;
+    int jumpCnt = 0;
     map<string,int> baseAddresses;
     map<string,string> segmentConverter;
     int sp = 256;

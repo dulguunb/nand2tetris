@@ -10,6 +10,7 @@ CodeWriter::CodeWriter(string filename){
   segmentConverter["argument"] = "R2";
   segmentConverter["this"] = "R3";
   segmentConverter["that"] = "R4";
+
   staticVariableName="";
   auto iter = filename.begin();
   do{
@@ -54,152 +55,54 @@ CodeWriter::~CodeWriter(){
 }
 void CodeWriter::writeArithmetic(string argument){
   string assembly = "";
-  map<string,string> arguments = {{"add","+"},{"sub","-"},
-    {"neg","-"},{"not","!"},{"and","&"},{"or","|"}};
+  map<string,string> arguments = {
+    {"add","+"},{"sub","-"},{"neg","-"},
+    {"not","!"},{"and","&"},{"or","|"},
+    {"lt","JGE"},{"gt","JLE"},{"eq","JNE"}
+    };
   if(argument == "neg" || argument == "not"){
     assembly+="// START of "+ argument +" opeartion on the stack\n";
     assembly+="@R0\n";
-    assembly+="M=M-1\n"; // sp --
-    assembly+="A=M\n";
+    assembly+="D=M-1\n"; // sp --
+    assembly+="A=D\n";
     assembly+="M="+arguments[argument]+"M\n";
     assembly+="// End of "+ argument +" opeartion on the stack\n";
+    assemblyFile << assembly;
+    return;
   }
+  assembly+="@R0\n";
+  assembly+="M=M-1\n"; // sp --
+  assembly+="A=M\n";
+  assembly+="D=M\n"; // store it
+  assembly+="A=A-1\n"; // go to (sp-2)
   if (argument == "add" || argument == "sub" ||  argument == "and" ||  argument == "or"){
     assembly+="// START OF "+ argument +" opeartion on the stack\n";
-    assembly+="@R0\n";
-    assembly+="M=M-1\n"; // sp --
-    // SP points to x
-    assembly+="A=M\n"; // go to sp--
-    assembly+="D=M\n"; // store it
-    assembly+="A=A-1\n"; // go to (sp-2)
     assembly+="M=M"+arguments[argument]+"D\n";
     assembly+="// End OF "+ argument +" opeartion on the stack\n";
+    assemblyFile << assembly;
+    return;
   }
-  if (argument == "eq"){
-    assembly+="// START OF EQ opeartion on the stack\n";
-    assembly+="@R0\n";
-    assembly+="M=M-1\n"; // y
-    assembly+="@"+to_string(sp-2)+"\n";
+  if (argument == "eq" || argument == "gt" || argument == "lt"){
+    assembly+="// START OF " + argument + " operation on the stack\n";
     assembly+="D=M-D\n";
-    assembly+="@fliptrue\n";
-    assembly+="D;JEQ\n"; // if D == 0
-    assembly+="@"+to_string(sp-2)+"\n";//  M=1 -> False
-    assembly+="M=0\n";
-    assembly+="@1\nD=A\n";
+    assembly+="@False_" + to_string(jumpCnt) + "\n";
+    assembly+="D;"+arguments[argument]+"\n";
     assembly+="@R0\n";
-    assembly+="M=M-D\n"; //  set A-1 to M=0 -> False
-    assembly+="0;JMP\n";// jump to the end
-    assembly+="(fliptrue)\n";
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-    assembly+="@1\nD=A\n";
+    assembly+="A=M-1\n";
+    assembly+="M=-1\n"; // setting it 1111111111111111
+    assembly+="@Continue_" + to_string(jumpCnt) + "\n";
+    assembly+="0;JMP\n";
+    assembly+="(False_" + to_string(jumpCnt)+ ")\n";
     assembly+="@R0\n";
-    assembly+="M=M-D\n";
-    assembly+="// END OF AND opeartion on the stack\n";
-    sp--;
+    assembly+="A=M-1\n";
+    assembly+="M=0\n"; // setting it to 0000000000000000
+    assembly+="(Continue_"+to_string(jumpCnt)+")\n";
+    assembly+="// END OF " + argument + " operation on the stack\n";
+    assemblyFile << assembly;
+    jumpCnt++;
+    return;
   }
-  if (argument == "gt"){
-    assembly+="// START OF GT opeartion on the stack\n";
-
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n"; // y
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="D=D-M\n"; // y-x
-    assembly+="@fliptrue\n";
-    assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
-    assembly+="0;JMP\n";// jump to the end
-    assembly+="(fliptrue)\n";
-
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-
-    assembly+="// END OF AND opeartion on the stack\n";
-    sp--;
-  }
-  if (argument == "lt"){
-    assembly+="// START OF LT opeartion on the stack\n";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=M\n"; // y
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="D=D-M\n"; // z=(y - x)
-
-    assembly+="@flipfalse\n";
-    assembly+="D;JGT\n"; // z>0 positive then set sp-2 to true and sp--
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-
-    assembly+="0;JMP\n";
-    assembly+="(flipfalse)\n";
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-    assembly+="// END OF AND opeartion on the stack\n";
-    sp--;
-  }
-  if(argument == "and"){
-    assembly+="// START OF AND opeartion on the stack\n";
-    assembly+="@2\n";
-    assembly+="D=A\n";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=D-M\n"; // z=2 - (y)
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="D=D-M\n"; // D=z-(x)
-    
-    assembly+="@fliptrue\n";
-    assembly+="D;JEQ\n";
-    
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
-    assembly+="0;JMP\n";
-    
-    assembly+="(fliptrue)\n"; // M = true
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-
-    assembly+="// END OF AND opeartion on the stack\n";
-    sp--;
-  }
-  if(argument == "or"){
-    assembly+="// START OF OR opeartion on the stack\n";
-    assembly+="@0\n";
-    assembly+="D=A\n";
-    assembly+="@"+to_string(sp-1)+"\n";
-    assembly+="D=D-M\n"; // z = 0 - (y)
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="D=D-M\n"; // z - (x)
-    assembly+="@fliptrue\n";
-    assembly+="D;JLT\n";
-
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=0\n"; // M=false
-    assembly+="0;JMP\n";
-
-    assembly+="(fliptrue)\n"; // M = true
-    assembly+="@"+to_string(sp-2)+"\n";
-    assembly+="M=1\n"; // M=true
-    assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
-    
-    assembly+="// END OF OR opeartion on the stack\n";
-    sp--;
-  }
-  assemblyFile << assembly;
+  
 }
 void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   string assembly="";
