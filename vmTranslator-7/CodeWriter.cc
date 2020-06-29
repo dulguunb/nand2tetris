@@ -1,22 +1,20 @@
 #include "CodeWriter.h"
 CodeWriter::CodeWriter(string filename){
-  baseAddresses["LCL"] = 300;
-  baseAddresses["ARG"] = 400;
-  baseAddresses["THIS"] = 3000;
-  baseAddresses["THAT"] = 3010;
-  baseAddresses["TMP"] = 5;
-  baseAddresses["sp"] = 256;
   segmentConverter["local"] = "R1";
   segmentConverter["argument"] = "R2";
   segmentConverter["this"] = "R3";
   segmentConverter["that"] = "R4";
-
+  string newFileDirectory = "";
   staticVariableName="";
+  string parentDirectory = "";
   auto iter = filename.begin();
   do{
     if (*iter != '.'){
+      parentDirectory+=*iter;
       if ( *iter == '/'){
         staticVariableName="";
+        newFileDirectory+=parentDirectory+"/";
+        parentDirectory="";
       }
       else {
         staticVariableName+=*iter;
@@ -24,31 +22,13 @@ CodeWriter::CodeWriter(string filename){
       iter++;
     }
   }while(*iter != '.' && iter != filename.end());
-  assemblyFile.open(filename+".asm");
-  string init="";
-  init+="@"+to_string(baseAddresses["sp"])+"\n";
-  init+="D=A\n";
-  init+="@R0\n";
-  init+="M=D\n";
-  init+="@"+to_string(baseAddresses["LCL"])+"\n";
-  init+="D=A\n";
-  init+="@R1\n";
-  init+="M=D\n";
-  init+="@"+to_string(baseAddresses["ARG"])+"\n";
-  init+="D=A\n";
-  init+="@R2\n";
-  init+="M=D\n";
-  init+="@"+to_string(baseAddresses["THIS"])+"\n";
-  init+="D=A\n";
-  init+="@R3\n";
-  init+="M=D\n";
-  init+="@"+to_string(baseAddresses["THAT"])+"\n";
-  init+="D=A\n";
-  init+="@R4\n";
-  init+="M=D\n";
-  cout << init << endl;
-  assemblyFile << init;
-
+  if(newFileDirectory == ""){
+    // root directory
+    assemblyFile.open(staticVariableName+".asm");
+  }
+  else{ 
+    assemblyFile.open(newFileDirectory+"/"+staticVariableName+".asm");
+  }
 }
 CodeWriter::~CodeWriter(){
   assemblyFile.close();
@@ -110,7 +90,6 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   && 
   (segment == "local" || segment == "argument" || 
    segment == "this" || segment == "that")){
-    int offset = baseAddresses[segmentConverter[segment]] + index;
     sp--;
     assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
 
@@ -130,7 +109,6 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   (segment == "local" || segment == "argument" || 
   segment == "this"  || segment == "that")
   ){
-    int offset =   baseAddresses[segmentConverter[segment]] + index;
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
     
     assembly+="@"+to_string(index)+"\nD=A\n";
@@ -222,7 +200,9 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
       pointer = "@R4\n";
     }
     else{
+      #ifdef debug7
       cout << "ERROR: This/That pointer only needs 0/1 index" << endl;
+      #endif
     }
     assembly+="// pop pointer\n";
     assembly+="@1\nD=A\n";
@@ -243,7 +223,9 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
       pointer = "@R4\n";
     }
     else{
+      #ifdef debug7
       cout << "ERROR: This/That pointer only needs 0/1 index" << endl;
+      #endif
     }
     assembly+="// push pointer\n";
     assembly+=pointer;
@@ -266,12 +248,13 @@ void CodeWriter::WriteBranching(CommandType type,string argument){
   }
   if(type == CommandType::C_IF){
     assembly+="// CommandType::C_IF start\n";
+    assembly="@R0\n";
     assembly+="@R0\n";
-    assembly+="M=M-1\n";
-    assembly+="A=D\n";
-    assembly+="D=M+1\n";
+    assembly+="M=M-1\n"; // sp --
+    assembly+="A=M\n";
+    assembly+="D=M\n"; // store it
     assembly+="@"+argument+"\n";
-    assembly+="D;JEQ\n"; // if it's 0 then it must be true
+    assembly+="D;JNE\n"; // if it's 0 then it must be true
     // else just carry on with the execution
     assembly+="// CommandType::C_IF end\n";
   }
