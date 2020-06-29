@@ -20,6 +20,11 @@ int main(int argc,char *argv[]){
     {
       code.WritePushPop(parser.commandType(),arg1,arg2);
     }
+    if(parser.commandType() == CommandType::C_IF
+     || parser.commandType() == CommandType::C_GOTO)
+     {
+       code.WriteBranching(parser.commandType(),arg1);
+     }
     parser.advance();
   }
   return 0;
