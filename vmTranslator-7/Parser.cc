@@ -31,40 +31,25 @@ CommandType Parser::commandType(){
     if(keyword == "add" || keyword == "sub" || keyword == "eq"
     || keyword == "lt" || keyword == "gt" || keyword == "not"
     || keyword == "and" || keyword == "or"|| keyword == "neg"){
-      #ifdef debug7
-      cout << "CommandType::C_ARITHMETIC" << endl;
-      #endif
       return CommandType::C_ARITHMETIC;
     }
     if(keyword == "push"){
-      #ifdef debug7
-      cout << "CommandType::C_PUSH" << endl;
-      #endif
       return CommandType::C_PUSH;
     }
     if(keyword == "pop"){
-      #ifdef debug7
-      cout << "CommandType::C_POP" << endl;
-      #endif
       return CommandType::C_POP;
     }
     if(keyword == "if-goto"){
-      #ifdef debug7
-      cout << "CommandType::IF" << endl;
-      #endif
       return CommandType::C_IF;
     }
     if (keyword == "goto"){
-      #ifdef debug7
-      cout << "CommandType::C_GOTO" << endl;
-      #endif
       return CommandType::C_GOTO;
     }
     if(keyword == "label"){
-      #ifdef debug7
-      cout << "CommandType::C_LABEL" << endl;
-      #endif
       return CommandType::C_LABEL;
+    }
+    if(keyword == "call"){
+      return CommandType::C_CALL;
     }
   }
   return result;
@@ -113,10 +98,6 @@ int Parser::arg2(){
        type == CommandType::C_POP ||
        type == CommandType::C_FUNCTION ||
        type == CommandType::C_CALL ){
-    #ifdef debug7
-    cout <<"token.end(): " << *(tokens.begin() + 2) << endl;
-    cout <<"token.end()-1: " << *(tokens.begin() + 1) << endl;
-    #endif
     result = stoi(*(tokens.begin() + 2));
     #ifdef debug7
     cout << "result: " << result << endl;

@@ -11,7 +11,8 @@ class CodeWriter{
     CodeWriter(string);
     void writeArithmetic(string);
     void WritePushPop(CommandType,string,int);
-    void WriteBranching(CommandType type,string argument);
+    void WriteBranching(CommandType,string);
+    void WriteFunction(CommandType,string,int);
     ~CodeWriter();
   private:
     string staticVariableName;

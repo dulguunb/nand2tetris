@@ -90,7 +90,6 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   && 
   (segment == "local" || segment == "argument" || 
    segment == "this" || segment == "that")){
-    sp--;
     assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
 
     assembly+="@"+to_string(index)+"\nD=A\n";
@@ -110,18 +109,17 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   segment == "this"  || segment == "that")
   ){
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
-    
-    assembly+="@"+to_string(index)+"\nD=A\n";
+    assembly+="@"+to_string(index)+"\n";
+    assembly+="D=A\n";
     assembly+="@"+segmentConverter[segment]+"\n";
-    assembly+="D=D+M\n@a\nM=D\n"; // addr = segment + i
-
+    assembly+="D=D+M\n";
+    assembly+="@a\n"; // addr = segment + i
+    assembly+="M=D\n";
     assembly+="@a\nA=M\nD=M\n";
     assembly+="@R0\n";
     assembly+="A=M\nM=D\n"; // *SP=*addr
-
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
-    sp++;
   }
   if(type == CommandType::C_PUSH && segment == "temp"){
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
@@ -136,7 +134,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
 
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
-    sp++;
+
   }
   if(type == CommandType::C_POP && segment == "temp"){
     assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
@@ -151,7 +149,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@R0\n";
     assembly+="A=M\nD=M\n"; // *addr=*SP
     assembly+="@a\nA=M\nM=D\n";
-    sp--;
+
   }
   if(type == CommandType::C_PUSH && segment == "constant"){
     assembly+="// PUSH CONSTANT " + to_string(index) + "\n";
@@ -161,7 +159,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="A=M\nM=D\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
-    sp++;
+
   }
   if(type == CommandType::C_POP && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
@@ -174,7 +172,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="M=D\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M-D\n"; // sp --
-    sp--;
+
   }
   if(type == CommandType::C_PUSH && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
@@ -187,7 +185,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// incrementing stack pointer\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
-    sp++;
+
   }
   if(type == CommandType::C_POP && segment == "pointer"){
     string pointer = "";
@@ -210,7 +208,7 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="M=M-D\nA=M\nD=M\n";
     assembly+=pointer;
     assembly+="M=D\n";
-    sp--;
+
   }
   if (type == CommandType::C_PUSH && segment == "pointer"){
     string pointer = "";
@@ -233,11 +231,27 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@R0\nA=M\nM=D\n";
     assembly+="@1\nD=A\n";
     assembly+="@R0\nM=M+D\n"; // sp ++
-    sp++;
+
   }
   assemblyFile << assembly;
 }
-
+void CodeWriter::WriteFunction(CommandType type,string arg1, int arg2){
+  string assembly = "";
+  if (type == CommandType::C_CALL){
+    assembly+="@R2\n";
+    "@R0\n";
+    "D=M-1\n";
+    "D=D-1\n";
+    "A=D\n";
+    "@R2\n";
+    "M=D\n";
+    "@R0\n";
+    "A=M-1\n";
+    "D=M\n";
+     
+    assembly+="@";
+  }
+}
 void CodeWriter::WriteBranching(CommandType type,string argument){
   string assembly = "";
   if(type == CommandType::C_GOTO){
