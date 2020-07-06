@@ -21,7 +21,7 @@ int main(int argc,char *argv[]){
     string arg1 = parser.arg1();
     int arg2 = parser.arg2();
     #ifdef debug7
-    cout << "type:" << commandTypeName[parser.commandType()] << endl;
+    // cout << "type:" << commandTypeName[parser.commandType()] << endl;
     cout << "arg1:" << parser.arg1() << endl;
     cout << "arg2:"  << parser.arg2() << endl;
     #endif
@@ -39,9 +39,15 @@ int main(int argc,char *argv[]){
      {
       code.WriteBranching(parser.commandType(),arg1);
      }
-     else if (parser.commandType() == CommandType::C_CALL){
-       
-     }
+    else if (parser.commandType() == CommandType::C_CALL){
+      code.WriteCall(arg1,arg2);
+    }
+    else if (parser.commandType() == CommandType::C_FUNCTION){
+      code.WriteFunction(arg1,arg2);
+    }
+    else if (parser.commandType() == CommandType::C_RETURN){
+      code.WriteReturn();
+    }
     parser.advance();
   }
   return 0;

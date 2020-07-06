@@ -235,23 +235,129 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   }
   assemblyFile << assembly;
 }
-void CodeWriter::WriteFunction(CommandType type,string arg1, int arg2){
-  string assembly = "";
-  if (type == CommandType::C_CALL){
-    assembly+="@R2\n";
-    "@R0\n";
-    "D=M-1\n";
-    "D=D-1\n";
-    "A=D\n";
-    "@R2\n";
-    "M=D\n";
-    "@R0\n";
-    "A=M-1\n";
-    "D=M\n";
-     
-    assembly+="@";
-  }
+void CodeWriter::WriteCall(string arg1, int arg2){
+  string assembly=
+  "@FUNC_"+staticVariableName+'_'+to_string(callCnt)+"\n"+
+  assembly+="A=M\n";
+  assembly+="D=M\n";
+  assembly+="@R0\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n";// push ret addr label
+
+  assembly+="R0\n";
+  assembly+="M=M+1\n"; // sp++
+
+  assembly+="@R1\n"; // LCL
+  assembly+="D=A\n";
+
+  assembly+="@R0\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n"; // push LCL
+
+  assembly+="R0\n";
+  assembly+="M=M+1\n"; // sp++
+
+  assembly+="@R2\n"; // ARG
+  assembly+="D=A\n";
+
+  assembly+="@R0\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n";// push ARG
+
+  assembly+="R0\n";
+  assembly+="M=M+1\n"; // sp++
+
+  assembly+="@R3\n"; // THIS
+  assembly+="D=A\n";
+
+  assembly+="@R0\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n"; // push LCL
+
+  assembly+="R0\n";
+  assembly+="M=M+1\n";// sp++
+
+  assembly+="@R4\n"; // THAT
+  assembly+="D=A\n";
+
+  assembly+="@R0\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n"; // push LCL
+
+  assembly+="R0\n";
+  assembly+="M=M+1\n"; // sp++
+
+  assembly+="//Reposition ARG = SP - 5- arg\n";
+  assembly+="@R0\n";
+  assembly+="D=M\n";
+  assembly+="@5\n";
+  assembly+="D=D-A\n";
+  assembly+="@"+to_string(arg2)+"\n";
+  assembly+="D=D-A\n";
+  assembly+="@R2\n";
+  assembly+="M=D\n";
+  assembly+="// End or Repositioning\n";
+
+  assembly+="// ARG = SP\n";
+  assembly+="@R0\n";
+  assembly+="D=M\n";
+  assembly+="@R1\n";
+  assembly+="M=D\n";
+  assembly+="// end of ARG=SP\n";
+  assembly+="// JUMP to FunctionName\n";
+  assembly+="@"+arg1+"\n";
+  assembly+="D=A\n";
+  assembly+="0;JMP\n";
+  assembly+="// end of JUMP to FunctionName\n";
+  assembly+="(FUNC_"+staticVariableName+'_'+to_string(callCnt)+")"+"\n";
+  assemblyFile << assembly;
 }
+void CodeWriter::WriteFunction(string arg1, int arg2){
+  string assembly = "("+arg1+")\n";
+  for(int i=0;i<arg2;i++){
+    WritePushPop(CommandType::C_PUSH,"constant",0);
+  }
+  assemblyFile << assembly;
+}
+void CodeWriter::WriteReturn(){
+  string assembly = "// endFrame = LCL\n";
+  assembly+="@R1\n"; //LCL
+  assembly+="D=M\n";
+  assembly+="@endFrame\n";
+  assembly+="M=D\n";
+  assembly+="@5\n";
+  assembly+="D=D-A\n";//(endFrame-5)
+  assembly+="A=D\n";
+  assembly+="D=M\n"; // *(endFrame - 5)
+  assembly+="@retAddr\n";
+  assembly+="M=D\n"; // retAddr = *(endFrame-5)
+  ;
+  WritePushPop(CommandType::C_POP,"argument",0);
+  assembly+="@R2\n";
+  assembly+="D=M\n";
+  assembly+="@R0\n";
+  assembly+="M=D+1\n";
+  restoreEndFrame("R4",1);
+  restoreEndFrame("R3",2);
+  restoreEndFrame("R2",3);
+  restoreEndFrame("R1",4);
+  assembly+="@retAddr\n";
+  assembly+="A=M\n";
+  assembly+="0;JMP\n";
+  assemblyFile << assembly;
+}
+void CodeWriter::restoreEndFrame(string segment,int offset){
+  string assembly = "";
+  assembly+="@endFrame\n";
+  assembly+="A=M-1\n";
+  assembly+="D=M\n";
+  assembly+="@"+to_string(offset)+"\n";
+  assembly+="D=D-A\n";
+  assembly+="@"+segment +"\n";
+  assembly+="M=D\n";
+  assemblyFile << assembly;
+}
+
 void CodeWriter::WriteBranching(CommandType type,string argument){
   string assembly = "";
   if(type == CommandType::C_GOTO){

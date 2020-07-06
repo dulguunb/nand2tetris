@@ -48,6 +48,12 @@ CommandType Parser::commandType(){
     if(keyword == "label"){
       return CommandType::C_LABEL;
     }
+    if(keyword == "function"){
+      return CommandType::C_FUNCTION;
+    }
+    if(keyword == "return"){
+      return CommandType::C_RETURN;
+    }
     if(keyword == "call"){
       return CommandType::C_CALL;
     }
@@ -74,18 +80,22 @@ string Parser::arg1(){
   CommandType type = commandType();
   auto tokens = tokenize();
   string result = "";
-  if (type == CommandType::C_ARITHMETIC ){
-    result = *(tokens.begin());
-  }
-  else if (type == CommandType::C_LABEL
-  || type == CommandType::C_GOTO ||
-     type == CommandType::C_IF){
+  if (type == CommandType::C_ARITHMETIC){
     #ifdef debug7
     cout << "result arg1: " << *(tokens.begin()) << endl;
     #endif
-    result = *(tokens.begin()+1);
+    result = *(tokens.begin());
   }
-  else{
+  else if (
+    type == CommandType::C_LABEL || 
+    type == CommandType::C_GOTO ||
+    type == CommandType::C_IF ||
+    type == CommandType::C_FUNCTION ||
+    type == CommandType::C_CALL
+    ){
+    #ifdef debug7
+    cout << "result arg1: " << *(tokens.begin()+1) << endl;
+    #endif
     result = *(tokens.begin()+1);
   }
   return result;
