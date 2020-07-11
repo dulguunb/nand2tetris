@@ -326,12 +326,10 @@ void CodeWriter::WriteReturn(){
   assembly+="@endFrame\n";
   assembly+="M=D\n";
   assembly+="@5\n";
-  assembly+="D=D-A\n";//(endFrame-5)
-  assembly+="A=D\n";
+  assembly+="A=D-A\n";//(endFrame-5)
   assembly+="D=M\n"; // *(endFrame - 5)
   assembly+="@retAddr\n";
   assembly+="M=D\n"; // retAddr = *(endFrame-5)
-  ;
   WritePushPop(CommandType::C_POP,"argument",0);
   assembly+="@R2\n";
   assembly+="D=M\n";
@@ -349,10 +347,8 @@ void CodeWriter::WriteReturn(){
 void CodeWriter::restoreEndFrame(string segment,int offset){
   string assembly = "";
   assembly+="@endFrame\n";
-  assembly+="A=M-1\n";
+  assembly+="AM=M-1\n";
   assembly+="D=M\n";
-  assembly+="@"+to_string(offset)+"\n";
-  assembly+="D=D-A\n";
   assembly+="@"+segment +"\n";
   assembly+="M=D\n";
   assemblyFile << assembly;
@@ -368,7 +364,6 @@ void CodeWriter::WriteBranching(CommandType type,string argument){
   }
   if(type == CommandType::C_IF){
     assembly+="// CommandType::C_IF start\n";
-    assembly="@R0\n";
     assembly+="@R0\n";
     assembly+="M=M-1\n"; // sp --
     assembly+="A=M\n";
