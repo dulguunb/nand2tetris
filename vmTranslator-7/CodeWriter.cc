@@ -8,6 +8,7 @@ CodeWriter::CodeWriter(string filename){
   staticVariableName="";
   string parentDirectory = "";
   auto iter = filename.begin();
+  string extension = "";
   do{
     if (*iter != '.'){
       parentDirectory+=*iter;
@@ -22,12 +23,20 @@ CodeWriter::CodeWriter(string filename){
       iter++;
     }
   }while(*iter != '.' && iter != filename.end());
-  if(newFileDirectory == ""){
-    // root directory
-    assemblyFile.open(staticVariableName+".asm");
+  for(;iter!=filename.end();iter++){
+    extension+=*iter;
   }
-  else{ 
-    assemblyFile.open(newFileDirectory+"/"+staticVariableName+".asm");
+  if(extension == "asm"){ // singlefile
+    if(newFileDirectory == ""){
+      // root directory
+      assemblyFile.open(staticVariableName+".asm");
+    }
+    else{ 
+      assemblyFile.open(newFileDirectory+"/"+staticVariableName+".asm");
+    }
+  }
+  else { //directory
+
   }
 }
 CodeWriter::~CodeWriter(){
@@ -237,57 +246,25 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
 }
 void CodeWriter::WriteCall(string arg1, int arg2){
   string assembly=
-  "@FUNC_"+staticVariableName+'_'+to_string(callCnt)+"\n"+
-  assembly+="A=M\n";
-  assembly+="D=M\n";
-  assembly+="@R0\n";
-  assembly+="A=M\n";
-  assembly+="M=D\n";// push ret addr label
-
-  assembly+="R0\n";
-  assembly+="M=M+1\n"; // sp++
-
-  assembly+="@R1\n"; // LCL
+  "@FUNC_"+staticVariableName+'_'+to_string(callCnt)+"\n";
   assembly+="D=A\n";
-
   assembly+="@R0\n";
   assembly+="A=M\n";
-  assembly+="M=D\n"; // push LCL
-
-  assembly+="R0\n";
-  assembly+="M=M+1\n"; // sp++
-
-  assembly+="@R2\n"; // ARG
-  assembly+="D=A\n";
-
+  assembly+="M=D\n";
   assembly+="@R0\n";
-  assembly+="A=M\n";
-  assembly+="M=D\n";// push ARG
+  assembly+="M=M+1\n";
+  vector <string> segments = {"@R0","@R1","@R2","@R3"};
+  for(auto iter=segments.begin();iter!=segments.end();iter++){
+    assembly+=*iter+"\n";
+    assembly+="D=M\n";
+    assembly+="@R0\n";
+    assembly+="A=M\n";
+    assembly+="M=D\n";
+    assembly+="@R0\n";// sp
+    assembly+="M=M+1\n";// sp++
+  }
 
-  assembly+="R0\n";
-  assembly+="M=M+1\n"; // sp++
-
-  assembly+="@R3\n"; // THIS
-  assembly+="D=A\n";
-
-  assembly+="@R0\n";
-  assembly+="A=M\n";
-  assembly+="M=D\n"; // push LCL
-
-  assembly+="R0\n";
-  assembly+="M=M+1\n";// sp++
-
-  assembly+="@R4\n"; // THAT
-  assembly+="D=A\n";
-
-  assembly+="@R0\n";
-  assembly+="A=M\n";
-  assembly+="M=D\n"; // push LCL
-
-  assembly+="R0\n";
-  assembly+="M=M+1\n"; // sp++
-
-  assembly+="//Reposition ARG = SP - 5- arg\n";
+  assembly+="//Reposition ARG = SP - 5 - nargs\n";
   assembly+="@R0\n";
   assembly+="D=M\n";
   assembly+="@5\n";
@@ -306,7 +283,6 @@ void CodeWriter::WriteCall(string arg1, int arg2){
   assembly+="// end of ARG=SP\n";
   assembly+="// JUMP to FunctionName\n";
   assembly+="@"+arg1+"\n";
-  assembly+="D=A\n";
   assembly+="0;JMP\n";
   assembly+="// end of JUMP to FunctionName\n";
   assembly+="(FUNC_"+staticVariableName+'_'+to_string(callCnt)+")"+"\n";
@@ -314,10 +290,10 @@ void CodeWriter::WriteCall(string arg1, int arg2){
 }
 void CodeWriter::WriteFunction(string arg1, int arg2){
   string assembly = "("+arg1+")\n";
+  assemblyFile << assembly;
   for(int i=0;i<arg2;i++){
     WritePushPop(CommandType::C_PUSH,"constant",0);
   }
-  assemblyFile << assembly;
 }
 void CodeWriter::WriteReturn(){
   string assembly = "// endFrame = LCL\n";
@@ -330,16 +306,18 @@ void CodeWriter::WriteReturn(){
   assembly+="D=M\n"; // *(endFrame - 5)
   assembly+="@retAddr\n";
   assembly+="M=D\n"; // retAddr = *(endFrame-5)
+  assemblyFile << assembly;
   WritePushPop(CommandType::C_POP,"argument",0);
-  assembly+="@R2\n";
+  assembly="@R2\n"; //arg
   assembly+="D=M\n";
   assembly+="@R0\n";
   assembly+="M=D+1\n";
+  assemblyFile << assembly;
   restoreEndFrame("R4",1);
   restoreEndFrame("R3",2);
   restoreEndFrame("R2",3);
   restoreEndFrame("R1",4);
-  assembly+="@retAddr\n";
+  assembly="@retAddr\n";
   assembly+="A=M\n";
   assembly+="0;JMP\n";
   assemblyFile << assembly;

@@ -1,5 +1,6 @@
 #include "Parser.h"
 Parser::Parser(string filename){
+  
   program.open(filename);
   lineCnt = 0;
   for(string line; getline(program,line);){
@@ -79,7 +80,7 @@ vector<string> Parser::tokenize(){
 string Parser::arg1(){
   CommandType type = commandType();
   auto tokens = tokenize();
-  string result = "";
+  string result = *(tokens.begin()+1);
   if (type == CommandType::C_ARITHMETIC){
     #ifdef debug7
     cout << "result arg1: " << *(tokens.begin()) << endl;
