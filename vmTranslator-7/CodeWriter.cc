@@ -14,7 +14,7 @@ CodeWriter::CodeWriter(string filename){
       parentDirectory+=*iter;
       if ( *iter == '/'){
         staticVariableName="";
-        newFileDirectory+=parentDirectory+"/";
+        newFileDirectory+=parentDirectory;
         parentDirectory="";
       }
       else {
@@ -26,18 +26,24 @@ CodeWriter::CodeWriter(string filename){
   for(;iter!=filename.end();iter++){
     extension+=*iter;
   }
+  newFileDirectory.erase(prev(newFileDirectory.end()));
+  // parentDirectory.erase(parentDirectory.end());
+  string outputFilename = "";
   if(extension == ".vm"){ // singlefile
     if(newFileDirectory == ""){
       // root directory
-      assemblyFile.open(staticVariableName+".asm");
+      outputFilename=staticVariableName+".asm";
     }
     else{ 
-      assemblyFile.open(newFileDirectory+"/"+staticVariableName+".asm");
+     outputFilename = newFileDirectory+"/"+staticVariableName+".asm";
     }
   }
   else { //directory
-
+      outputFilename = newFileDirectory+".asm";
   }
+
+  cout << "outputFilename: " << outputFilename << endl;
+  assemblyFile.open(outputFilename);
 }
 CodeWriter::~CodeWriter(){
   assemblyFile.close();

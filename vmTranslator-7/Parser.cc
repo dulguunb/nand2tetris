@@ -45,20 +45,14 @@ Parser::Parser(string filename){
          result += buffer;
       }
     }
-    #ifdef debug8
-    cout << "result: " << result << endl;
-    #endif
     string asmfilename="";
     for(auto iter = result.begin();iter!=result.end();iter++){
-      asmfilename+=*iter;
       if(*iter == '\n'){
         string absolutePath = newFileDirectory+asmfilename;
-        #ifdef debug8
-          cout << "asmfilename: " << absolutePath << endl;
-        #endif
         fileNames.push_back(absolutePath);
         asmfilename="";
       }
+      asmfilename+=*iter;
     }
   }
   #ifdef debug8
