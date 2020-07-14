@@ -1,12 +1,78 @@
 #include "Parser.h"
 Parser::Parser(string filename){
-  
-  program.open(filename);
+  string extension="";
+  string newFileDirectory = "";
+  string fName="";
+  string parentDirectory = "";
+  vector<string> fileNames;
   lineCnt = 0;
-  for(string line; getline(program,line);){
-    auto iter=line.begin();
-    if(*iter != '/' && *(iter++) != '/'){
-      rawProgram.push_back(line);
+  auto iter = filename.begin();
+  do{
+    if (*iter != '.'){
+      parentDirectory+=*iter;
+      if ( *iter == '/'){
+        newFileDirectory+=parentDirectory;
+        parentDirectory="";
+      }
+      iter++;
+    }
+  } while(*iter != '.' && iter != filename.end());
+
+  for(;iter!=filename.end();iter++){
+    extension+=*iter;
+  }
+  #ifdef debug8
+  cout << "extension: " << extension << endl;
+  #endif
+  if(extension == ".vm"){ // singlefile
+    #ifdef debug8
+    cout << "single file\n";
+    #endif
+    fileNames.push_back(filename);
+  }
+  else {
+    string cmdString = "ls "+ newFileDirectory + " | grep .asm";
+    const char *cmd = cmdString.c_str();
+    FILE* pipe = popen(cmd , "r");
+    char buffer[128];
+    string result = "";
+    if(!pipe){
+      cout << "file couldn't be opened\n";
+    }
+    while (!feof(pipe)) {
+      // use buffer to read and add to result
+      if (fgets(buffer, 128, pipe) != NULL){
+         result += buffer;
+      }
+    }
+    #ifdef debug8
+    cout << "result: " << result << endl;
+    #endif
+    string asmfilename="";
+    for(auto iter = result.begin();iter!=result.end();iter++){
+      asmfilename+=*iter;
+      if(*iter == '\n'){
+        string absolutePath = newFileDirectory+asmfilename;
+        #ifdef debug8
+          cout << "asmfilename: " << absolutePath << endl;
+        #endif
+        fileNames.push_back(absolutePath);
+        asmfilename="";
+      }
+    }
+  }
+  for(auto iterFileNames=fileNames.begin();
+    iterFileNames!=fileNames.end(); iterFileNames++){
+    string newfilename = *iterFileNames;
+    ifstream program(newfilename);
+    #ifdef debug8
+    cout << "iterfilename: " << newfilename << endl;
+    #endif
+    for(string line; getline(program,line);){
+      auto iter=line.begin();
+      if(*iter != '/' && *(iter++) != '/'){
+        rawProgram.push_back(line);
+      }
     }
   }
   currentLine = *(rawProgram.begin() + lineCnt);

@@ -26,7 +26,7 @@ CodeWriter::CodeWriter(string filename){
   for(;iter!=filename.end();iter++){
     extension+=*iter;
   }
-  if(extension == "asm"){ // singlefile
+  if(extension == ".vm"){ // singlefile
     if(newFileDirectory == ""){
       // root directory
       assemblyFile.open(staticVariableName+".asm");
