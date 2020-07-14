@@ -31,7 +31,7 @@ Parser::Parser(string filename){
     fileNames.push_back(filename);
   }
   else {
-    string cmdString = "ls "+ newFileDirectory + " | grep .asm";
+    string cmdString = "ls "+ newFileDirectory + " | grep -E \".vm$\"";
     const char *cmd = cmdString.c_str();
     FILE* pipe = popen(cmd , "r");
     char buffer[128];
@@ -61,6 +61,9 @@ Parser::Parser(string filename){
       }
     }
   }
+  #ifdef debug8
+  cout << "Number of files: " << fileNames.size() << endl;
+  #endif
   for(auto iterFileNames=fileNames.begin();
     iterFileNames!=fileNames.end(); iterFileNames++){
     string newfilename = *iterFileNames;
