@@ -1,11 +1,75 @@
 #include "Parser.h"
 Parser::Parser(string filename){
-  program.open(filename);
+  string extension="";
+  string newFileDirectory = "";
+  string fName="";
+  string parentDirectory = "";
+  vector<string> fileNames;
   lineCnt = 0;
-  for(string line; getline(program,line);){
-    auto iter=line.begin();
-    if(*iter != '/' && *(iter++) != '/'){
-      rawProgram.push_back(line);
+  auto iter = filename.begin();
+  do{
+    if (*iter != '.'){
+      parentDirectory+=*iter;
+      if ( *iter == '/'){
+        newFileDirectory+=parentDirectory;
+        parentDirectory="";
+      }
+      iter++;
+    }
+  } while(*iter != '.' && iter != filename.end());
+
+  for(;iter!=filename.end();iter++){
+    extension+=*iter;
+  }
+  #ifdef debug8
+  cout << "extension: " << extension << endl;
+  #endif
+  if(extension == ".vm"){ // singlefile
+    #ifdef debug8
+    cout << "single file\n";
+    #endif
+    fileNames.push_back(filename);
+  }
+  else {
+    string cmdString = "ls "+ newFileDirectory + " | grep -E \".vm$\"";
+    const char *cmd = cmdString.c_str();
+    FILE* pipe = popen(cmd , "r");
+    char buffer[128];
+    string result = "";
+    if(!pipe){
+      cout << "file couldn't be opened\n";
+    }
+    while (!feof(pipe)) {
+      // use buffer to read and add to result
+      if (fgets(buffer, 128, pipe) != NULL){
+         result += buffer;
+      }
+    }
+    string asmfilename="";
+    for(auto iter = result.begin();iter!=result.end();iter++){
+      if(*iter == '\n'){
+        string absolutePath = newFileDirectory+asmfilename;
+        fileNames.push_back(absolutePath);
+        asmfilename="";
+      }
+      asmfilename+=*iter;
+    }
+  }
+  #ifdef debug8
+  cout << "Number of files: " << fileNames.size() << endl;
+  #endif
+  for(auto iterFileNames=fileNames.begin();
+    iterFileNames!=fileNames.end(); iterFileNames++){
+    string newfilename = *iterFileNames;
+    ifstream program(newfilename);
+    #ifdef debug8
+    cout << "iterfilename: " << newfilename << endl;
+    #endif
+    for(string line; getline(program,line);){
+      auto iter=line.begin();
+      if(*iter != '/' && *(iter++) != '/'){
+        rawProgram.push_back(line);
+      }
     }
   }
   currentLine = *(rawProgram.begin() + lineCnt);
@@ -31,40 +95,31 @@ CommandType Parser::commandType(){
     if(keyword == "add" || keyword == "sub" || keyword == "eq"
     || keyword == "lt" || keyword == "gt" || keyword == "not"
     || keyword == "and" || keyword == "or"|| keyword == "neg"){
-      #ifdef debug7
-      cout << "CommandType::C_ARITHMETIC" << endl;
-      #endif
       return CommandType::C_ARITHMETIC;
     }
     if(keyword == "push"){
-      #ifdef debug7
-      cout << "CommandType::C_PUSH" << endl;
-      #endif
       return CommandType::C_PUSH;
     }
     if(keyword == "pop"){
-      #ifdef debug7
-      cout << "CommandType::C_POP" << endl;
-      #endif
       return CommandType::C_POP;
     }
     if(keyword == "if-goto"){
-      #ifdef debug7
-      cout << "CommandType::IF" << endl;
-      #endif
       return CommandType::C_IF;
     }
     if (keyword == "goto"){
-      #ifdef debug7
-      cout << "CommandType::C_GOTO" << endl;
-      #endif
       return CommandType::C_GOTO;
     }
     if(keyword == "label"){
-      #ifdef debug7
-      cout << "CommandType::C_LABEL" << endl;
-      #endif
       return CommandType::C_LABEL;
+    }
+    if(keyword == "function"){
+      return CommandType::C_FUNCTION;
+    }
+    if(keyword == "return"){
+      return CommandType::C_RETURN;
+    }
+    if(keyword == "call"){
+      return CommandType::C_CALL;
     }
   }
   return result;
@@ -88,19 +143,23 @@ vector<string> Parser::tokenize(){
 string Parser::arg1(){
   CommandType type = commandType();
   auto tokens = tokenize();
-  string result = "";
-  if (type == CommandType::C_ARITHMETIC ){
-    result = *(tokens.begin());
-  }
-  else if (type == CommandType::C_LABEL
-  || type == CommandType::C_GOTO ||
-     type == CommandType::C_IF){
+  string result = *(tokens.begin()+1);
+  if (type == CommandType::C_ARITHMETIC){
     #ifdef debug7
     cout << "result arg1: " << *(tokens.begin()) << endl;
     #endif
-    result = *(tokens.begin()+1);
+    result = *(tokens.begin());
   }
-  else{
+  else if (
+    type == CommandType::C_LABEL || 
+    type == CommandType::C_GOTO ||
+    type == CommandType::C_IF ||
+    type == CommandType::C_FUNCTION ||
+    type == CommandType::C_CALL
+    ){
+    #ifdef debug7
+    cout << "result arg1: " << *(tokens.begin()+1) << endl;
+    #endif
     result = *(tokens.begin()+1);
   }
   return result;
@@ -113,10 +172,6 @@ int Parser::arg2(){
        type == CommandType::C_POP ||
        type == CommandType::C_FUNCTION ||
        type == CommandType::C_CALL ){
-    #ifdef debug7
-    cout <<"token.end(): " << *(tokens.begin() + 2) << endl;
-    cout <<"token.end()-1: " << *(tokens.begin() + 1) << endl;
-    #endif
     result = stoi(*(tokens.begin() + 2));
     #ifdef debug7
     cout << "result: " << result << endl;

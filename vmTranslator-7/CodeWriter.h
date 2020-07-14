@@ -11,12 +11,17 @@ class CodeWriter{
     CodeWriter(string);
     void writeArithmetic(string);
     void WritePushPop(CommandType,string,int);
-    void WriteBranching(CommandType type,string argument);
+    void WriteBranching(CommandType,string);
+    void WriteFunction(string,int);
+    void WriteCall(string,int);
+    void WriteReturn();
+    void restoreEndFrame(string,int);
     ~CodeWriter();
   private:
     string staticVariableName;
     vector<string> stack;
     int spBase = 256;
+    int callCnt = 0;
     int jumpCnt = 0;
     map<string,int> baseAddresses;
     map<string,string> segmentConverter;
