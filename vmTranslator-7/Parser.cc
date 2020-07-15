@@ -7,9 +7,13 @@ Parser::Parser(string filename){
   vector<string> fileNames;
   lineCnt = 0;
   auto iter = filename.begin();
+  string lastParentDirectory = "";
   do{
     if (*iter != '.'){
       parentDirectory+=*iter;
+      if (parentDirectory != ""){
+        lastParentDirectory = parentDirectory;
+      }
       if ( *iter == '/'){
         newFileDirectory+=parentDirectory;
         parentDirectory="";
@@ -31,7 +35,14 @@ Parser::Parser(string filename){
     fileNames.push_back(filename);
   }
   else {
+    auto lastString = *(newFileDirectory.end()-1);
+    if (lastString != '/'){
+      newFileDirectory+=lastParentDirectory+'/';
+    }
     string cmdString = "ls "+ newFileDirectory + " | grep -E \".vm$\"";
+    #ifdef debug8
+    cout << "CMDString: " << cmdString << endl;
+    #endif
     const char *cmd = cmdString.c_str();
     FILE* pipe = popen(cmd , "r");
     char buffer[128];
