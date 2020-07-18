@@ -1,17 +1,22 @@
 #include "CodeWriter.h"
 CodeWriter::CodeWriter(string filename){
-  segmentConverter["local"] = "R1";
-  segmentConverter["argument"] = "R2";
-  segmentConverter["this"] = "R3";
-  segmentConverter["that"] = "R4";
+  segmentConverter["local"] = "LCL";
+  segmentConverter["argument"] = "ARG";
+  segmentConverter["this"] = "THIS";
+  segmentConverter["that"] = "THAT";
   string newFileDirectory = "";
   staticVariableName="";
   string parentDirectory = "";
   auto iter = filename.begin();
   string extension = "";
+  string lastDir = "";
+  bool isDir = false;
   do{
     if (*iter != '.'){
       parentDirectory+=*iter;
+      if(parentDirectory!=""){
+        lastDir = parentDirectory;
+      }
       if ( *iter == '/'){
         staticVariableName="";
         newFileDirectory+=parentDirectory;
@@ -34,16 +39,31 @@ CodeWriter::CodeWriter(string filename){
       // root directory
       outputFilename=staticVariableName+".asm";
     }
-    else{ 
+    else {
      outputFilename = newFileDirectory+"/"+staticVariableName+".asm";
     }
   }
   else { //directory
-      outputFilename = newFileDirectory+".asm";
+      string lastRootDir = "";
+      if (*(lastDir.end()-1) == '/'){
+        lastDir.pop_back();
+      }
+      if (*(filename.end()-1) == '/'){
+        filename.pop_back();
+      }
+      isDir = true;
+      staticVariableName = lastDir;
+      outputFilename = filename+'/'+lastDir+".asm";
   }
-
+  #ifdef debug8
   cout << "outputFilename: " << outputFilename << endl;
+  #endif
   assemblyFile.open(outputFilename);
+  if(isDir){
+    string assembly="@256\nD=A\n@SP\nM=D\n";
+    assemblyFile << assembly;
+    WriteCall("Sys.init",0);
+  }
 }
 CodeWriter::~CodeWriter(){
   assemblyFile.close();
@@ -57,7 +77,7 @@ void CodeWriter::writeArithmetic(string argument){
     };
   if(argument == "neg" || argument == "not"){
     assembly+="// START of "+ argument +" opeartion on the stack\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="D=M-1\n"; // sp --
     assembly+="A=D\n";
     assembly+="M="+arguments[argument]+"M\n";
@@ -65,7 +85,7 @@ void CodeWriter::writeArithmetic(string argument){
     assemblyFile << assembly;
     return;
   }
-  assembly+="@R0\n";
+  assembly+="@SP\n";
   assembly+="M=M-1\n"; // sp --
   assembly+="A=M\n";
   assembly+="D=M\n"; // store it
@@ -82,13 +102,13 @@ void CodeWriter::writeArithmetic(string argument){
     assembly+="D=M-D\n";
     assembly+="@False_" + to_string(jumpCnt) + "\n";
     assembly+="D;"+arguments[argument]+"\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M-1\n";
     assembly+="M=-1\n"; // setting it 1111111111111111
     assembly+="@Continue_" + to_string(jumpCnt) + "\n";
     assembly+="0;JMP\n";
     assembly+="(False_" + to_string(jumpCnt)+ ")\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M-1\n";
     assembly+="M=0\n"; // setting it to 0000000000000000
     assembly+="(Continue_"+to_string(jumpCnt)+")\n";
@@ -97,13 +117,12 @@ void CodeWriter::writeArithmetic(string argument){
     jumpCnt++;
     return;
   }
-  
 }
 void CodeWriter::WritePushPop(CommandType type,string segment,int index){
   string assembly="";
   if(type == CommandType::C_POP
   && 
-  (segment == "local" || segment == "argument" || 
+  (segment == "local" || segment == "argument" ||
    segment == "this" || segment == "that")){
     assembly+="// POP operation " + segment + " " + to_string(index) + "\n";
 
@@ -112,15 +131,15 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="D=D+M\n@a\nM=D\n"; // addr=LCL+i
 
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
+    assembly+="@SP\nM=M-D\n"; // sp --
 
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nD=M\n"; // *addr=*SP
     assembly+="@a\nA=M\nM=D\n";
   }
   if(type == CommandType::C_PUSH
   &&
-  (segment == "local" || segment == "argument" || 
+  (segment == "local" || segment == "argument" ||
   segment == "this"  || segment == "that")
   ){
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
@@ -131,10 +150,10 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="@a\n"; // addr = segment + i
     assembly+="M=D\n";
     assembly+="@a\nA=M\nD=M\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nM=D\n"; // *SP=*addr
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp ++
+    assembly+="@SP\nM=M+D\n"; // sp ++
   }
   if(type == CommandType::C_PUSH && segment == "temp"){
     assembly+="// PUSH operation " + segment + " " + to_string(index) + "\n";
@@ -144,11 +163,11 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="D=D+A\n@a\nM=D\n"; // addr= 5 + i
 
     assembly+="@a\nA=M\nD=M\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nM=D\n"; // *SP=*addr
 
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp ++
+    assembly+="@SP\nM=M+D\n"; // sp ++
 
   }
   if(type == CommandType::C_POP && segment == "temp"){
@@ -159,9 +178,9 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="D=D+A\n@a\nM=D\n"; // addr=5+i
 
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
+    assembly+="@SP\nM=M-D\n"; // sp --
 
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nD=M\n"; // *addr=*SP
     assembly+="@a\nA=M\nM=D\n";
 
@@ -170,47 +189,49 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// PUSH CONSTANT " + to_string(index) + "\n";
     assembly+="@"+to_string(index)+"\n";
     assembly+="D=A\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nM=D\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp ++
+    assembly+="@SP\nM=M+D\n"; // sp ++
 
   }
   if(type == CommandType::C_POP && segment == "static"){
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Popping an element from stack\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M-D\nD=M\n";
     assembly+="// static variable " + currentStaticVariable + "\n";
     assembly+="@"+currentStaticVariable+"\n";
     assembly+="M=D\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M-D\n"; // sp --
+    assembly+="@SP\nM=M-D\n"; // sp --
 
   }
   if(type == CommandType::C_PUSH && segment == "static"){
+
     string currentStaticVariable=staticVariableName+"."+to_string(index) + "\n";
     assembly+="// Pushing an element from stack\n";
     assembly+="// static variable " + currentStaticVariable+"\n";
     assembly+="@"+currentStaticVariable+"\n";
     assembly+="D=M\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\nM=D\n";
     assembly+="// incrementing stack pointer\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp ++
+    assembly+="@SP\nM=M+D\n"; // sp ++
 
   }
   if(type == CommandType::C_POP && segment == "pointer"){
+
     string pointer = "";
     if(index == 0){
       // this pointer
-      pointer = "@R3\n";
+      pointer = "@THIS\n";
     }
     else if(index == 1){
       // that pointer
-      pointer = "@R4\n";
+      pointer = "@THAT\n";
     }
     else{
       #ifdef debug7
@@ -219,21 +240,22 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     }
     assembly+="// pop pointer\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="M=M-D\nA=M\nD=M\n";
     assembly+=pointer;
     assembly+="M=D\n";
 
   }
   if (type == CommandType::C_PUSH && segment == "pointer"){
+
     string pointer = "";
     if(index == 0){
       // this pointer
-      pointer = "@R3\n";
+      pointer = "@THIS\n";
     }
     else if(index == 1){
       // that pointer
-      pointer = "@R4\n";
+      pointer = "@THAT\n";
     }
     else{
       #ifdef debug7
@@ -243,124 +265,130 @@ void CodeWriter::WritePushPop(CommandType type,string segment,int index){
     assembly+="// push pointer\n";
     assembly+=pointer;
     assembly+="D=M\n";
-    assembly+="@R0\nA=M\nM=D\n";
+    assembly+="@SP\nA=M\nM=D\n";
     assembly+="@1\nD=A\n";
-    assembly+="@R0\nM=M+D\n"; // sp ++
+    assembly+="@SP\nM=M+D\n"; // sp ++
 
   }
   assemblyFile << assembly;
 }
 void CodeWriter::WriteCall(string arg1, int arg2){
-  string assembly=
-  "@FUNC_"+staticVariableName+'_'+to_string(callCnt)+"\n";
+  string label="RET_"+staticVariableName+'_'+to_string(callCnt);
+  string assembly="@"+label+"\n";
+  assembly+="// write call started\n";
   assembly+="D=A\n";
-  assembly+="@R0\n";
+  assembly+="@SP\n";
   assembly+="A=M\n";
   assembly+="M=D\n";
-  assembly+="@R0\n";
+  assembly+="@SP\n";
   assembly+="M=M+1\n";
-  vector <string> segments = {"@R0","@R1","@R2","@R3"};
+  vector <string> segments = {"@LCL","@ARG","@THIS","@THAT"};
   for(auto iter=segments.begin();iter!=segments.end();iter++){
     assembly+=*iter+"\n";
     assembly+="D=M\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="A=M\n";
     assembly+="M=D\n";
-    assembly+="@R0\n";// sp
+    assembly+="@SP\n";// sp
     assembly+="M=M+1\n";// sp++
   }
-
-  assembly+="//Reposition ARG = SP - 5 - nargs\n";
-  assembly+="@R0\n";
+  assembly+="@SP\n";
   assembly+="D=M\n";
-  assembly+="@5\n";
-  assembly+="D=D-A\n";
-  assembly+="@"+to_string(arg2)+"\n";
-  assembly+="D=D-A\n";
-  assembly+="@R2\n";
+  assembly+="@LCL\n";
   assembly+="M=D\n";
-  assembly+="// End or Repositioning\n";
 
-  assembly+="// ARG = SP\n";
-  assembly+="@R0\n";
-  assembly+="D=M\n";
-  assembly+="@R1\n";
+  assembly+="@"+to_string(arg2+5)+"\n";
+  assembly+="D=D-A\n";
+  assembly+="@ARG\n";
   assembly+="M=D\n";
-  assembly+="// end of ARG=SP\n";
-  assembly+="// JUMP to FunctionName\n";
   assembly+="@"+arg1+"\n";
   assembly+="0;JMP\n";
   assembly+="// end of JUMP to FunctionName\n";
-  assembly+="(FUNC_"+staticVariableName+'_'+to_string(callCnt)+")"+"\n";
+  assembly+="("+label+")"+"\n";
+  callCnt++;
+  assembly+="// write call ended\n";
   assemblyFile << assembly;
 }
 void CodeWriter::WriteFunction(string arg1, int arg2){
-  string assembly = "("+arg1+")\n";
-  assemblyFile << assembly;
+  string assembly = "// WriteFunction \n";
+  assembly+="("+arg1+")\n";
+  currentCalledFunction=arg1+"$";
   for(int i=0;i<arg2;i++){
-    WritePushPop(CommandType::C_PUSH,"constant",0);
+      assembly+="@0\n";
+      assembly+="D=A\n";
+      assembly+="@SP\n";
+      assembly+="A=M\n";
+      assembly+="M=D\n";
+      assembly+="@SP\n";
+      assembly+="M=M+1\n";
   }
+  assemblyFile << assembly;
 }
 void CodeWriter::WriteReturn(){
   string assembly = "// endFrame = LCL\n";
-  assembly+="@R1\n"; //LCL
+  assembly+="@LCL\n"; //LCL
   assembly+="D=M\n";
-  assembly+="@endFrame\n";
-  assembly+="M=D\n";
+  assembly+="@R14\n";
+  assembly+="M=D\n"; // frame=LCL
+
   assembly+="@5\n";
   assembly+="A=D-A\n";//(endFrame-5)
   assembly+="D=M\n"; // *(endFrame - 5)
-  assembly+="@retAddr\n";
+  assembly+="@R15\n";
   assembly+="M=D\n"; // retAddr = *(endFrame-5)
-  assemblyFile << assembly;
-  WritePushPop(CommandType::C_POP,"argument",0);
-  assembly="@R2\n"; //arg
+  // pop argument
+  assembly+="@ARG\n";
   assembly+="D=M\n";
-  assembly+="@R0\n";
+  assembly+="@0\n";
+  assembly+="D=D+A\n";
+  assembly+="@R13\n";
+  assembly+="M=D\n";
+  assembly+="@SP\n";
+  assembly+="AM=M-1\n";
+  assembly+="D=M\n";
+  assembly+="@R13\n";
+  assembly+="A=M\n";
+  assembly+="M=D\n";
+  // assemblyFile << assembly;
+  assembly+="@ARG\n"; //arg
+  assembly+="D=M\n";
+  assembly+="@SP\n";
   assembly+="M=D+1\n";
-  assemblyFile << assembly;
-  restoreEndFrame("R4",1);
-  restoreEndFrame("R3",2);
-  restoreEndFrame("R2",3);
-  restoreEndFrame("R1",4);
-  assembly="@retAddr\n";
+  vector<string> segments = {"@THAT","@THIS","@ARG","@LCL"};
+  for(auto segment=segments.begin();segment!=segments.end();segment++){
+    assembly+="@R14\n";
+    assembly+="AMD=M-1\n";
+    assembly+="D=M\n";
+    assembly+=*segment +"\n";
+    assembly+="M=D\n";
+  }
+  assembly+="@R15\n";
   assembly+="A=M\n";
   assembly+="0;JMP\n";
   assemblyFile << assembly;
 }
-void CodeWriter::restoreEndFrame(string segment,int offset){
-  string assembly = "";
-  assembly+="@endFrame\n";
-  assembly+="AM=M-1\n";
-  assembly+="D=M\n";
-  assembly+="@"+segment +"\n";
-  assembly+="M=D\n";
-  assemblyFile << assembly;
-}
-
 void CodeWriter::WriteBranching(CommandType type,string argument){
   string assembly = "";
   if(type == CommandType::C_GOTO){
     assembly+="// CommandType::C_GOTO start\n";
-    assembly+="@"+argument+"\n";
+    assembly+="@"+currentCalledFunction+argument+"\n";
     assembly+="0;JMP\n";
     assembly+="// CommandType::C_GOTO end\n";
   }
   if(type == CommandType::C_IF){
     assembly+="// CommandType::C_IF start\n";
-    assembly="@R0\n";
-    assembly+="@R0\n";
+    assembly+="@SP\n";
     assembly+="M=M-1\n"; // sp --
     assembly+="A=M\n";
     assembly+="D=M\n"; // store it
-    assembly+="@"+argument+"\n";
+    assembly+="@"+currentCalledFunction+argument+"\n";
     assembly+="D;JNE\n"; // if it's 0 then it must be true
     // else just carry on with the execution
     assembly+="// CommandType::C_IF end\n";
   }
   if(type == CommandType::C_LABEL){
     assembly+="// CommandType::C_LABEL start\n";
-    assembly+="("+argument+")\n";
+    assembly+="("+currentCalledFunction+argument+")\n";
     assembly+="// CommandType::C_LABEL end\n";
   }
   assemblyFile << assembly;

@@ -3,9 +3,12 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <experimental/filesystem>
 #include <vector>
+#include <algorithm>
 #include "CommandType.h"
 using namespace std;
+namespace fs = std::experimental::filesystem;
 
 class Parser{
   public:

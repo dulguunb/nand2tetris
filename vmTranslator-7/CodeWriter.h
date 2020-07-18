@@ -23,6 +23,7 @@ class CodeWriter{
     int spBase = 256;
     int callCnt = 0;
     int jumpCnt = 0;
+    string currentCalledFunction="";
     map<string,int> baseAddresses;
     map<string,string> segmentConverter;
     int sp = 256;
