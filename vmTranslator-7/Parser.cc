@@ -8,62 +8,19 @@ Parser::Parser(string filename){
   lineCnt = 0;
   auto iter = filename.begin();
   string lastParentDirectory = "";
-  do{
-    if (*iter != '.'){
-      parentDirectory+=*iter;
-      if (parentDirectory != ""){
-        lastParentDirectory = parentDirectory;
-      }
-      if ( *iter == '/'){
-        newFileDirectory+=parentDirectory;
-        parentDirectory="";
-      }
-      iter++;
-    }
-  } while(*iter != '.' && iter != filename.end());
-
-  for(;iter!=filename.end();iter++){
-    extension+=*iter;
-  }
-  #ifdef debug8
-  cout << "extension: " << extension << endl;
-  #endif
-  if(extension == ".vm"){ // singlefile
+  if(filename.find(".vm") != string::npos){ // singlefile
     #ifdef debug8
     cout << "single file\n";
     #endif
     fileNames.push_back(filename);
   }
-  else {
-    auto lastString = *(newFileDirectory.end()-1);
-    if (lastString != '/'){
-      newFileDirectory+=lastParentDirectory+'/';
-    }
-    string cmdString = "ls "+ newFileDirectory + " | grep -E \".vm$\"";
-    #ifdef debug8
-    cout << "CMDString: " << cmdString << endl;
-    #endif
-    const char *cmd = cmdString.c_str();
-    FILE* pipe = popen(cmd , "r");
-    char buffer[128];
-    string result = "";
-    if(!pipe){
-      cout << "file couldn't be opened\n";
-    }
-    while (!feof(pipe)) {
-      // use buffer to read and add to result
-      if (fgets(buffer, 128, pipe) != NULL){
-         result += buffer;
+  else { // directory
+    string vmExtension = ".vm";
+    for(auto& p: fs::directory_iterator(filename)){
+      string path = p.path();
+      if(path.find(vmExtension) != string::npos){
+        fileNames.push_back(path);
       }
-    }
-    string asmfilename="";
-    for(auto iter = result.begin();iter!=result.end();iter++){
-      if(*iter == '\n'){
-        string absolutePath = newFileDirectory+asmfilename;
-        fileNames.push_back(absolutePath);
-        asmfilename="";
-      }
-      asmfilename+=*iter;
     }
   }
   #ifdef debug8
@@ -72,12 +29,13 @@ Parser::Parser(string filename){
   for(auto iterFileNames=fileNames.begin();
     iterFileNames!=fileNames.end(); iterFileNames++){
     string newfilename = *iterFileNames;
-    ifstream program(newfilename);
+    ifstream program;
+    program.open(newfilename);
     #ifdef debug8
     cout << "iterfilename: " << newfilename << endl;
     #endif
     for(string line; getline(program,line);){
-      auto iter=line.begin();
+      auto iter = line.begin();
       if(*iter != '/' && *(iter++) != '/'){
         rawProgram.push_back(line);
       }
@@ -100,7 +58,7 @@ void Parser::advance(){
 CommandType Parser::commandType(){
   CommandType result;
   string keyword="";
-  for(string::iterator iter=currentLine.begin();
+  for(auto iter=currentLine.begin();
     iter!=currentLine.end();iter++){
     keyword+=*iter;
     if(keyword == "add" || keyword == "sub" || keyword == "eq"
@@ -138,7 +96,7 @@ CommandType Parser::commandType(){
 vector<string> Parser::tokenize(){
   vector<string> tokens;
   string keyword="";
-  for(string::iterator iter=currentLine.begin();
+  for(auto iter=currentLine.begin();
       iter!=currentLine.end();iter++){
     if(isspace(*iter)){
       tokens.push_back(keyword);
@@ -154,7 +112,7 @@ vector<string> Parser::tokenize(){
 string Parser::arg1(){
   CommandType type = commandType();
   auto tokens = tokenize();
-  string result = *(tokens.begin()+1);
+  string result = "";
   if (type == CommandType::C_ARITHMETIC){
     #ifdef debug7
     cout << "result arg1: " << *(tokens.begin()) << endl;
@@ -162,7 +120,7 @@ string Parser::arg1(){
     result = *(tokens.begin());
   }
   else if (
-    type == CommandType::C_LABEL || 
+    type == CommandType::C_LABEL ||
     type == CommandType::C_GOTO ||
     type == CommandType::C_IF ||
     type == CommandType::C_FUNCTION ||
@@ -171,6 +129,9 @@ string Parser::arg1(){
     #ifdef debug7
     cout << "result arg1: " << *(tokens.begin()+1) << endl;
     #endif
+    result = *(tokens.begin()+1);
+  }
+  else{
     result = *(tokens.begin()+1);
   }
   return result;

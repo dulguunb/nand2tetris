@@ -1,5 +1,6 @@
 #ifndef CODEWRITER_H
 #define CODEWRITER_H
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,13 +17,16 @@ class CodeWriter{
     void WriteCall(string,int);
     void WriteReturn();
     void restoreEndFrame(string,int);
+    string getOutputFile();
     ~CodeWriter();
   private:
+    string outputFileName;
     string staticVariableName;
     vector<string> stack;
     int spBase = 256;
     int callCnt = 0;
     int jumpCnt = 0;
+    string currentCalledFunction="";
     map<string,int> baseAddresses;
     map<string,string> segmentConverter;
     int sp = 256;
